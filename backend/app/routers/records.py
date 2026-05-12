@@ -17,6 +17,7 @@ from app.schemas.medical_record import (
     MedicalRecordUpdate,
 )
 from app.schemas.prescription import PrescriptionCreate, PrescriptionRead
+from app.services.authorization_service import can_write_record, requires_patient_filter_for_records
 from app.services import patient_service
 from app.utils.deps import get_current_user, get_db, require_role
 
@@ -38,21 +39,13 @@ async def _get_record(db: AsyncSession, record_id: UUID) -> MedicalRecord:
     return rec
 
 
-def _can_write_record(user: User, record: MedicalRecord) -> bool:
-    if user.role == UserRole.admin:
-        return True
-    if user.role == UserRole.doctor and record.doctor_id == user.id:
-        return True
-    return False
-
-
 @router.get("", response_model=list[MedicalRecordRead], status_code=status.HTTP_200_OK)
 async def list_records(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(get_current_user)],
     patient_id: UUID | None = Query(None),
 ) -> list[MedicalRecord]:
-    if current.role in (UserRole.nurse, UserRole.receptionist) and patient_id is None:
+    if requires_patient_filter_for_records(current) and patient_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="patient_id is required for this role.",

@@ -1,4 +1,4 @@
-# Riverside HMS (Hospital Management System)
+# National Eye Care Hospital (Hospital Management System)
 
 Monorepo: **FastAPI** backend (`backend/`), **Next.js 14** frontend (`frontend/`), **PostgreSQL**, **Redis**, and **Celery** for async transcription jobs.
 
@@ -102,3 +102,4 @@ Ensure `CORS_ORIGINS` on the API includes your Vercel origin and that production
 | `backend/render.yaml` | Render web + Celery worker blueprint |
 | `backend/.env.example` | Backend environment template |
 | `frontend/.env.local.example` | Frontend environment template |
+| `docs/REFACTORING_CONVENTIONS.md` | Shared architecture and refactor standards |

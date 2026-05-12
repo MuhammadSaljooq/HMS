@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Sans } from "next/font/google";
+import { AppProviders } from "@/components/providers/AppProviders";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -16,8 +17,8 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Riverside HMS",
-  description: "Hospital Management System",
+  title: "National Eye Care Hospital",
+  description: "National Eye Care Hospital Management System",
 };
 
 export default function RootLayout({
@@ -28,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${dmSans.variable} ${dmMono.variable} font-sans`}>
-        {children}
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

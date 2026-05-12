@@ -19,6 +19,8 @@ type AppointmentCalendarProps = {
   selectedDate: string;
   onSelectDate: (ymd: string) => void;
   markedDates: Set<string>;
+  /** When true, omit outer Card — parent provides themed surface (e.g. dashboard dataCard). */
+  embedded?: boolean;
 };
 
 export function AppointmentCalendar({
@@ -27,6 +29,7 @@ export function AppointmentCalendar({
   selectedDate,
   onSelectDate,
   markedDates,
+  embedded = false,
 }: AppointmentCalendarProps) {
   const y = month.getFullYear();
   const m = month.getMonth();
@@ -50,6 +53,50 @@ export function AppointmentCalendar({
 
   const label = month.toLocaleString(undefined, { month: "long", year: "numeric" });
 
+  const body = (
+    <>
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase text-muted-foreground">
+        {WEEKDAYS.map((w) => (
+          <div key={w} className="py-1">
+            {w}
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((cell, idx) => {
+          if (cell.day == null || cell.ymd == null) {
+            return <div key={`e-${idx}`} className="aspect-square" />;
+          }
+          const ymd: string = cell.ymd;
+          const marked = markedDates.has(ymd);
+          const selected = selectedDate === ymd;
+          return (
+            <button
+              key={ymd}
+              type="button"
+              onClick={() => onSelectDate(ymd)}
+              className={cn(
+                "relative flex aspect-square flex-col items-center justify-center rounded-md border text-sm transition-colors",
+                selected
+                  ? "border-primary bg-primary/10 font-semibold text-primary"
+                  : "border-transparent hover:bg-muted",
+              )}
+            >
+              {cell.day}
+              {marked && (
+                <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" aria-hidden />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+
+  if (embedded) {
+    return body;
+  }
+
   return (
     <Card className="border-border">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -67,43 +114,7 @@ export function AppointmentCalendar({
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium uppercase text-muted-foreground">
-          {WEEKDAYS.map((w) => (
-            <div key={w} className="py-1">
-              {w}
-            </div>
-          ))}
-        </div>
-        <div className="mt-1 grid grid-cols-7 gap-1">
-          {cells.map((cell, idx) => {
-            if (cell.day == null || cell.ymd == null) {
-              return <div key={`e-${idx}`} className="aspect-square" />;
-            }
-            const ymd: string = cell.ymd;
-            const marked = markedDates.has(ymd);
-            const selected = selectedDate === ymd;
-            return (
-              <button
-                key={ymd}
-                type="button"
-                onClick={() => onSelectDate(ymd)}
-                className={cn(
-                  "relative flex aspect-square flex-col items-center justify-center rounded-md border text-sm transition-colors",
-                  selected
-                    ? "border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-transparent hover:bg-muted",
-                )}
-              >
-                {cell.day}
-                {marked && (
-                  <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" aria-hidden />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </CardContent>
+      <CardContent>{body}</CardContent>
     </Card>
   );
 }

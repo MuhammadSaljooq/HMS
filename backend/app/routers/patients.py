@@ -13,6 +13,7 @@ from app.models.enums import UserRole
 from app.schemas.patient import PatientCreate, PatientListItem, PatientListResponse, PatientRead, PatientUpdate
 from app.schemas.transcription import TranscriptionRead
 from app.schemas.vitals import VitalsCreate, VitalsRead
+from app.services.authorization_service import can_record_vitals
 from app.services import patient_service
 from app.utils.deps import get_current_user, get_db, require_role
 
@@ -166,12 +167,7 @@ async def add_vitals(
     patient = await _get_patient_or_404(db, patient_id)
     if not await patient_service.user_can_view_patient(db, current, patient_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied for this patient.")
-    if current.role not in (
-        UserRole.admin,
-        UserRole.doctor,
-        UserRole.nurse,
-        UserRole.receptionist,
-    ):
+    if not can_record_vitals(current):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot record vitals.")
 
     vital = Vitals(

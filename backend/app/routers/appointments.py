@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime
 from typing import Annotated
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -21,28 +20,20 @@ from app.schemas.appointment import (
     AppointmentUpdate,
 )
 from app.services import patient_service
+from app.services.appointment_service import (
+    SLOT_STEP,
+    day_bounds_local,
+    has_scheduling_conflict,
+    intervals_overlap,
+    lock_doctor_day_schedule,
+    normalize_to_karachi,
+    scheduled_blocks_for_day,
+    working_day_bounds,
+)
+from app.services.authorization_service import can_manage_appointment, can_view_doctor_schedule
 from app.utils.deps import get_current_user, get_db, require_role
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
-
-TZ = ZoneInfo("Asia/Karachi")
-SLOT_STEP = timedelta(minutes=30)
-APPOINTMENT_BLOCK = timedelta(minutes=30)
-
-
-def _day_bounds_local(d: date) -> tuple[datetime, datetime]:
-    start = datetime.combine(d, time(0, 0), tzinfo=TZ)
-    return start, start + timedelta(days=1)
-
-
-def _working_day_bounds(d: date) -> tuple[datetime, datetime]:
-    """9:00–17:00 local (last bookable slot starts at 16:30)."""
-    day_start = datetime.combine(d, time(0, 0), tzinfo=TZ)
-    return datetime.combine(d, time(9, 0), tzinfo=TZ), datetime.combine(d, time(17, 0), tzinfo=TZ)
-
-
-def _intervals_overlap(a0: datetime, a1: datetime, b0: datetime, b1: datetime) -> bool:
-    return a0 < b1 and b0 < a1
 
 
 async def _get_appointment(db: AsyncSession, appointment_id: UUID) -> Appointment:
@@ -57,105 +48,11 @@ async def _get_appointment(db: AsyncSession, appointment_id: UUID) -> Appointmen
     return appt
 
 
-def _can_manage_appointment(user: User, appt: Appointment) -> bool:
-    if user.role == UserRole.admin:
-        return True
-    if user.role == UserRole.receptionist:
-        return True
-    if user.role == UserRole.doctor and appt.doctor_id == user.id:
-        return True
-    return False
-
-
-def _can_view_doctor_schedule(user: User, doctor_id: UUID) -> bool:
-    if user.role in (UserRole.admin, UserRole.receptionist, UserRole.nurse):
-        return True
-    if user.role == UserRole.doctor and doctor_id == user.id:
-        return True
-    return False
-
-
 async def _doctor_or_404(db: AsyncSession, doctor_id: UUID) -> User:
     doc = await db.get(User, doctor_id)
     if doc is None or doc.role != UserRole.doctor or not doc.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found.")
     return doc
-
-
-async def _scheduled_blocks_for_day(
-    db: AsyncSession,
-    *,
-    doctor_id: UUID,
-    day: date,
-) -> list[tuple[datetime, datetime]]:
-    day_start, day_end = _day_bounds_local(day)
-    stmt = (
-        select(Appointment)
-        .where(
-            Appointment.doctor_id == doctor_id,
-            Appointment.scheduled_at >= day_start,
-            Appointment.scheduled_at < day_end,
-            Appointment.status == AppointmentStatus.scheduled,
-        )
-    )
-    rows = (await db.execute(stmt)).scalars().all()
-    blocks: list[tuple[datetime, datetime]] = []
-    for appt in rows:
-        start = appt.scheduled_at
-        if start.tzinfo is None:
-            start = start.replace(tzinfo=TZ)
-        else:
-            start = start.astimezone(TZ)
-        blocks.append((start, start + APPOINTMENT_BLOCK))
-    return blocks
-
-
-async def _has_scheduling_conflict(
-    db: AsyncSession,
-    *,
-    doctor_id: UUID,
-    slot_start: datetime,
-    exclude_appointment_id: UUID | None = None,
-) -> bool:
-    if slot_start.tzinfo is None:
-        slot_start = slot_start.replace(tzinfo=TZ)
-    else:
-        slot_start = slot_start.astimezone(TZ)
-    slot_end = slot_start + APPOINTMENT_BLOCK
-    day = slot_start.date()
-    day_start, day_end = _day_bounds_local(day)
-    stmt = select(Appointment).where(
-        Appointment.doctor_id == doctor_id,
-        Appointment.scheduled_at >= day_start,
-        Appointment.scheduled_at < day_end,
-        Appointment.status == AppointmentStatus.scheduled,
-    )
-    if exclude_appointment_id is not None:
-        stmt = stmt.where(Appointment.id != exclude_appointment_id)
-    rows = (await db.execute(stmt)).scalars().all()
-    for appt in rows:
-        a0 = appt.scheduled_at
-        if a0.tzinfo is None:
-            a0 = a0.replace(tzinfo=TZ)
-        else:
-            a0 = a0.astimezone(TZ)
-        a1 = a0 + APPOINTMENT_BLOCK
-        if _intervals_overlap(slot_start, slot_end, a0, a1):
-            return True
-    return False
-
-
-async def _lock_doctor_day_schedule(db: AsyncSession, *, doctor_id: UUID, slot_start: datetime) -> None:
-    if slot_start.tzinfo is None:
-        slot_start = slot_start.replace(tzinfo=TZ)
-    else:
-        slot_start = slot_start.astimezone(TZ)
-    doctor_key = int.from_bytes(doctor_id.bytes[:4], byteorder="big", signed=False)
-    day_key = slot_start.date().toordinal()
-    await db.execute(
-        text("SELECT pg_advisory_xact_lock(:doctor_key, :day_key)"),
-        {"doctor_key": doctor_key, "day_key": day_key},
-    )
 
 
 @router.get(
@@ -169,12 +66,12 @@ async def list_available_slots(
     current: Annotated[User, Depends(get_current_user)],
     day: Annotated[date, Query(description="Calendar day (YYYY-MM-DD) in Asia/Karachi")],
 ) -> list[AppointmentSlot]:
-    if not _can_view_doctor_schedule(current, doctor_id):
+    if not can_view_doctor_schedule(current, doctor_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot view this doctor's schedule.")
     await _doctor_or_404(db, doctor_id)
 
-    work_start, work_end = _working_day_bounds(day)
-    blocks = await _scheduled_blocks_for_day(db, doctor_id=doctor_id, day=day)
+    work_start, work_end = working_day_bounds(day)
+    blocks = await scheduled_blocks_for_day(db, doctor_id=doctor_id, day=day)
 
     slots: list[AppointmentSlot] = []
     t = work_start
@@ -182,7 +79,7 @@ async def list_available_slots(
         slot_start = t
         slot_end = t + SLOT_STEP
         available = not any(
-            _intervals_overlap(slot_start, slot_end, b0, b1) for b0, b1 in blocks
+            intervals_overlap(slot_start, slot_end, b0, b1) for b0, b1 in blocks
         )
         slots.append(AppointmentSlot(start=slot_start, end=slot_end, available=available))
         t += SLOT_STEP
@@ -214,14 +111,14 @@ async def list_appointments(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot view appointments for this patient.")
         stmt = stmt.where(Appointment.patient_id == patient_id)
     if doctor_id:
-        if not _can_view_doctor_schedule(current, doctor_id):
+        if not can_view_doctor_schedule(current, doctor_id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot filter by this doctor.")
         stmt = stmt.where(Appointment.doctor_id == doctor_id)
     if status is not None:
         stmt = stmt.where(Appointment.status == status)
 
     if filter_date is not None:
-        d0, d1 = _day_bounds_local(filter_date)
+        d0, d1 = day_bounds_local(filter_date)
         stmt = stmt.where(Appointment.scheduled_at >= d0, Appointment.scheduled_at < d1)
     else:
         if from_date is not None:
@@ -261,14 +158,10 @@ async def create_appointment(
     await _doctor_or_404(db, body.doctor_id)
 
     dump = body.model_dump()
-    st = dump["scheduled_at"]
-    if st.tzinfo is None:
-        st = st.replace(tzinfo=TZ)
-    else:
-        st = st.astimezone(TZ)
+    st = normalize_to_karachi(dump["scheduled_at"])
     dump["scheduled_at"] = st
-    await _lock_doctor_day_schedule(db, doctor_id=body.doctor_id, slot_start=st)
-    if await _has_scheduling_conflict(db, doctor_id=body.doctor_id, slot_start=st):
+    await lock_doctor_day_schedule(db, doctor_id=body.doctor_id, slot_start=st)
+    if await has_scheduling_conflict(db, doctor_id=body.doctor_id, slot_start=st):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="That time slot is already booked for this doctor.",
@@ -304,20 +197,16 @@ async def update_appointment(
     current: Annotated[User, Depends(get_current_user)],
 ) -> Appointment:
     appt = await _get_appointment(db, appointment_id)
-    if not _can_manage_appointment(current, appt):
+    if not can_manage_appointment(current, appt):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot modify this appointment.")
     data = body.model_dump(exclude_unset=True)
     if "doctor_id" in data and current.role == UserRole.doctor and data["doctor_id"] != current.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot reassign to another doctor.")
     if "scheduled_at" in data and data["scheduled_at"] is not None:
         doc_id = data.get("doctor_id", appt.doctor_id)
-        st = data["scheduled_at"]
-        if st.tzinfo is None:
-            st = st.replace(tzinfo=TZ)
-        else:
-            st = st.astimezone(TZ)
-        await _lock_doctor_day_schedule(db, doctor_id=doc_id, slot_start=st)
-        if await _has_scheduling_conflict(db, doctor_id=doc_id, slot_start=st, exclude_appointment_id=appt.id):
+        st = normalize_to_karachi(data["scheduled_at"])
+        await lock_doctor_day_schedule(db, doctor_id=doc_id, slot_start=st)
+        if await has_scheduling_conflict(db, doctor_id=doc_id, slot_start=st, exclude_appointment_id=appt.id):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="That time slot is already booked for this doctor.",
@@ -338,7 +227,7 @@ async def cancel_appointment(
 ) -> None:
     """Mark appointment as cancelled (soft cancel)."""
     appt = await _get_appointment(db, appointment_id)
-    if not _can_manage_appointment(current, appt):
+    if not can_manage_appointment(current, appt):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot cancel this appointment.")
     appt.status = AppointmentStatus.cancelled
     await db.flush()

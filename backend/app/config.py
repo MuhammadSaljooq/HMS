@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    APP_NAME: str = "HMS API"
+    APP_NAME: str = "National Eye Care Hospital API"
     APP_ENV: Literal["development", "staging", "production"] = "development"
     DEBUG: bool = False
 
@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str | None = None
     S3_PUBLIC_BASE_URL: str | None = None
 
+    GOOGLE_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_FALLBACK_MODEL: str | None = "gemini-2.0-flash"
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
 

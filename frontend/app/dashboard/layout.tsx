@@ -3,15 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { Header } from "@/components/layout/Header";
-import { MobileNav } from "@/components/layout/MobileNav";
-import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuthStore } from "@/store/authStore";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, hydrateFromServer } = useAuthStore();
-  const [collapsed, setCollapsed] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -41,14 +37,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
-      <div className="flex flex-1 flex-col pb-16 md:pb-0">
-        <Header user={user} />
-        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
-      </div>
-      <MobileNav />
-    </div>
-  );
+  return <div className="min-h-screen bg-background">{children}</div>;
 }

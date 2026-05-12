@@ -17,8 +17,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
       - name: Install backend dependencies
         run: pip install -r requirements.txt
+      - name: Validate dependency graph
+        run: pip check
+      - name: Compile backend sources
+        run: python -m compileall app
       - name: Run backend tests
         run: pytest -q
 

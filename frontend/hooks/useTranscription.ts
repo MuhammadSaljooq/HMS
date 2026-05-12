@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { fetchPipelineResult } from "@/lib/transcribe-api";
 import type { TranscriptionListItem, TranscriptionPipelineResult } from "@/types";
 
@@ -59,7 +60,7 @@ export function useTranscription() {
       setRemoteList(data);
     } catch (e: unknown) {
       setRemoteList([]);
-      const msg = e instanceof Error ? e.message : "Could not load transcription list.";
+      const msg = getApiErrorMessage(e, "Could not load transcription list.");
       setListError(msg);
     } finally {
       setLoadingList(false);

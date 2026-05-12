@@ -7,14 +7,16 @@ import { AttachToRecordDialog } from "@/components/transcriber/AttachToRecordDia
 import { AudioRecorder } from "@/components/transcriber/AudioRecorder";
 import { TranscriptDisplay } from "@/components/transcriber/TranscriptDisplay";
 import { TranscriptionHistory } from "@/components/transcriber/TranscriptionHistory";
+import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import { RoleGuard } from "@/components/layout/RoleGuard";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranscription } from "@/hooks/useTranscription";
 import { submitTranscriptionAudio, submitTranscriptionFromFile } from "@/lib/transcribe-api";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { TRANSCRIBER_ROLES } from "@/lib/rbac";
+import { useAuthStore } from "@/store/authStore";
 import type { Transcription, TranscriptionPipelineResult } from "@/types";
+import styles from "../theme-dashboard.module.css";
 
 type Phase = "idle" | "pending" | "processing" | "completed" | "failed";
 
@@ -25,7 +27,21 @@ function phaseFromStatus(s: TranscriptionPipelineResult["status"]): Phase {
   return "idle";
 }
 
+function phaseLabel(phase: Phase) {
+  switch (phase) {
+    case "processing":
+      return "Processing";
+    case "completed":
+      return "Complete";
+    case "failed":
+      return "Failed";
+    default:
+      return "Ready";
+  }
+}
+
 export default function TranscriberPage() {
+  const user = useAuthStore((s) => s.user);
   const {
     localRecent,
     remoteList,
@@ -76,8 +92,7 @@ export default function TranscriberPage() {
         const out = await submitTranscriptionAudio(blob, durationSeconds, "recording.webm");
         await applyPipeline(out.result);
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Transcription failed.";
-        setError(msg);
+        setError(getApiErrorMessage(e, "Transcription failed."));
         setPhase("failed");
       } finally {
         setIsProcessing(false);
@@ -95,8 +110,7 @@ export default function TranscriberPage() {
         const out = await submitTranscriptionFromFile(file);
         await applyPipeline(out.result);
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Transcription failed.";
-        setError(msg);
+        setError(getApiErrorMessage(e, "Transcription failed."));
         setPhase("failed");
       } finally {
         setIsProcessing(false);
@@ -113,8 +127,7 @@ export default function TranscriberPage() {
         const r = await loadPipeline(transcriptionId);
         await applyPipeline(r);
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Could not load transcription.";
-        setError(msg);
+        setError(getApiErrorMessage(e, "Could not load transcription."));
       } finally {
         setIsProcessing(false);
       }
@@ -124,17 +137,41 @@ export default function TranscriberPage() {
 
   return (
     <RoleGuard roles={TRANSCRIBER_ROLES}>
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div>
-          <h1 className="font-sans text-2xl font-semibold tracking-tight">AI transcriber</h1>
-          <p className="text-sm text-muted-foreground">
-            Record or upload audio. Short clips run synchronously; longer clips queue on the server and poll every 2
-            seconds.
-          </p>
-        </div>
+      <MockupDashboardShell styles={styles} user={user} activeSection="Transcriber">
+        <main className={styles.main}>
+          <div className={styles.heroRow}>
+            <div>
+              <h1 className={styles.heroTitle}>AI Transcriber</h1>
+              <p className={styles.heroSubtitle}>
+                Record or upload consultation audio, review structured notes, and attach the result to a patient chart.
+              </p>
+            </div>
+            <span className={styles.dropdown}>Urdu + English</span>
+          </div>
 
-        <div className="grid gap-6 lg:grid-cols-5">
-          <div className="space-y-6 lg:col-span-3">
+          <div className={styles.statRow}>
+            <div className={styles.summaryCard}>
+              <p className={styles.summaryLabel}>Current phase</p>
+              <p className={styles.summaryValue}>{phase === "idle" ? "Ready" : phaseLabel(phase)}</p>
+              <p className={styles.summarySub}>
+                {isProcessing ? "Audio is being processed by the transcription pipeline." : "Recorder is ready for a new clip."}
+              </p>
+            </div>
+            <div className={styles.summaryCard}>
+              <p className={styles.summaryLabel}>Queue items</p>
+              <p className={styles.summaryValue}>{loadingList ? "..." : remoteList.length}</p>
+              <p className={styles.summarySub}>Recent server-side transcriptions available from this workspace.</p>
+            </div>
+            <div className={styles.summaryCard}>
+              <p className={styles.summaryLabel}>Patient link</p>
+              <p className={styles.summaryValue}>{result ? (isLinked ? "Linked" : "Pending") : "None"}</p>
+              <p className={styles.summarySub}>
+                {result ? "Attach the cleaned note to keep the medical record workflow complete." : "No transcription selected yet."}
+              </p>
+            </div>
+          </div>
+
+          <div className={styles.contentColumn}>
             <AudioRecorder
               isProcessing={isProcessing}
               onSubmitRecording={handleRecording}
@@ -148,32 +185,56 @@ export default function TranscriberPage() {
               onAttachClick={() => result && setAttachOpen(true)}
             />
           </div>
-          <div className="space-y-4 lg:col-span-2">
-            <TranscriptionHistory
-              remote={remoteList}
-              localRecent={localRecent}
-              loading={loadingList}
-              error={listError}
-              onRefresh={() => void refreshRemoteList()}
-              onPickPipeline={(id) => void handlePickPipeline(id)}
-              onPickLocal={(r) => void applyPipeline(r)}
-            />
-            <Card className="border-border">
-              <CardHeader>
-                <CardTitle className="text-base">Quick actions</CardTitle>
-                <CardDescription>Jump to related workflows</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/dashboard/patients">Patient list</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/dashboard/records">Medical records</Link>
-                </Button>
-              </CardContent>
-            </Card>
+        </main>
+
+        <aside className={styles.rightPanel}>
+          <header className={styles.panelHeader}>
+            <h3 className={styles.panelTitle}>Transcription Queue</h3>
+            <span className={styles.smallBtn}>🎙</span>
+          </header>
+          <TranscriptionHistory
+            remote={remoteList}
+            localRecent={localRecent}
+            loading={loadingList}
+            error={listError}
+            onRefresh={() => void refreshRemoteList()}
+            onPickPipeline={(id) => void handlePickPipeline(id)}
+            onPickLocal={(r) => void applyPipeline(r)}
+          />
+
+          <div className={styles.reminderCard}>
+            <span className={styles.reminderIcon}>🩺</span>
+            <p className={styles.reminderText}>
+              Best results come from short, clear clips with one speaker at a time and audible patient complaints.
+            </p>
+            <span className={styles.remindBtn}>Tip</span>
           </div>
-        </div>
+
+          <div className={styles.conferenceList}>
+            <Link href="/dashboard/patients" className={styles.confItem}>
+              <div>
+                <span className={styles.confDate}>Chart</span>
+                <span className={styles.confHour}>PAT</span>
+              </div>
+              <div>
+                <p className={styles.confName}>Open patient list</p>
+                <p className={styles.confDoctor}>Find the chart before attaching a completed note.</p>
+              </div>
+              <span className={styles.confArrow}>↗</span>
+            </Link>
+            <Link href="/dashboard/records" className={styles.confItem}>
+              <div>
+                <span className={styles.confDate}>Record</span>
+                <span className={styles.confHour}>REC</span>
+              </div>
+              <div>
+                <p className={styles.confName}>Review medical records</p>
+                <p className={styles.confDoctor}>Cross-check the generated note with the latest encounter history.</p>
+              </div>
+              <span className={styles.confArrow}>↗</span>
+            </Link>
+          </div>
+        </aside>
 
         {result && (
           <AttachToRecordDialog
@@ -186,7 +247,7 @@ export default function TranscriberPage() {
             }}
           />
         )}
-      </div>
+      </MockupDashboardShell>
     </RoleGuard>
   );
 }

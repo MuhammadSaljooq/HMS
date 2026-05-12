@@ -5,14 +5,8 @@ import { Bell, Search } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import type { User, UserRole } from "@/types";
-
-const roleLabel: Record<UserRole, string> = {
-  admin: "Admin",
-  doctor: "Doctor",
-  nurse: "Nurse",
-  receptionist: "Reception",
-};
+import { USER_ROLE_LABELS } from "@/lib/roles";
+import type { User } from "@/types";
 
 function initials(user: User) {
   return user.full_name
@@ -52,7 +46,7 @@ export function Header({ user }: { user: User }) {
         <div className="hidden min-w-0 sm:block">
           <p className="truncate text-sm font-medium leading-none">{user.full_name}</p>
           <Badge variant="secondary" className="mt-1 text-[10px] font-normal">
-            {roleLabel[user.role]}
+            {USER_ROLE_LABELS[user.role]}
           </Badge>
         </div>
       </div>
