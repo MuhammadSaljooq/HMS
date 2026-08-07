@@ -16,7 +16,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.database import engine
 from app.rate_limit import limiter
-from app.routers import appointments, auth, dashboard, patients, records, transcribe, transcriptions, users
+from app.routers import appointments, auth, billing, dashboard, patients, records, transcribe, transcriptions, users
 
 settings = get_settings()
 logger = logging.getLogger("hms.api")
@@ -68,6 +68,7 @@ app.include_router(records.router, prefix="/api")
 app.include_router(transcribe.router, prefix="/api")
 app.include_router(transcriptions.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
+app.include_router(billing.router, prefix="/api")
 
 
 async def _database_ok() -> bool:

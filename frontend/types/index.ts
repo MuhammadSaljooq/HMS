@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "doctor" | "nurse" | "receptionist";
+export type UserRole = "admin" | "doctor" | "nurse" | "receptionist" | "cashier";
 
 export interface User {
   id: string;
@@ -152,4 +152,108 @@ export interface DashboardStats {
 export interface PatientListResponse {
   items: Patient[];
   total: number;
+}
+
+export type InvoiceStatus = "draft" | "issued" | "partially_paid" | "paid" | "void";
+export type PaymentMethod = "cash" | "card" | "bank_transfer" | "mobile_wallet" | "other";
+export type PaymentType = "payment" | "refund";
+
+export interface ServiceCatalogItem {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  default_price: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceLineItem {
+  id: string;
+  service_id: string | null;
+  description: string;
+  unit_price: string;
+  quantity: number;
+  line_total: string;
+}
+
+export interface Payment {
+  id: string;
+  invoice_id: string;
+  receipt_number: string;
+  payment_type: PaymentType;
+  method: PaymentMethod;
+  amount: string;
+  reference: string | null;
+  received_by: string;
+  received_at: string;
+  notes: string | null;
+}
+
+export interface Invoice {
+  id: string;
+  invoice_number: string | null;
+  patient_id: string;
+  appointment_id: string | null;
+  medical_record_id: string | null;
+  status: InvoiceStatus;
+  subtotal: string;
+  discount_total: string;
+  tax_total: string;
+  total_amount: string;
+  amount_paid: string;
+  balance_due: string;
+  notes: string | null;
+  created_by: string;
+  issued_at: string | null;
+  voided_at: string | null;
+  void_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceDetail extends Invoice {
+  line_items: InvoiceLineItem[];
+  payments: Payment[];
+}
+
+export interface InvoiceListResponse {
+  items: Invoice[];
+  total: number;
+}
+
+export interface PatientLookupItem {
+  id: string;
+  full_name: string;
+  mrn: string;
+}
+
+export interface MethodTotal {
+  method: PaymentMethod;
+  payments: string;
+  refunds: string;
+  net: string;
+}
+
+export interface DailyReport {
+  date: string;
+  totals: MethodTotal[];
+  net_total: string;
+}
+
+export interface ReconciliationReport {
+  date: string;
+  cashier_id: string;
+  totals: MethodTotal[];
+  net_total: string;
+}
+
+export interface OutstandingItem {
+  invoice_id: string;
+  invoice_number: string | null;
+  patient_id: string;
+  patient_name: string;
+  balance_due: string;
+  status: InvoiceStatus;
 }

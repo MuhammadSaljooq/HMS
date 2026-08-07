@@ -1,12 +1,13 @@
 import type { UserRole } from "@/types";
 
-export const ASSIGNABLE_USER_ROLES: UserRole[] = ["admin", "doctor", "nurse", "receptionist"];
+export const ASSIGNABLE_USER_ROLES: UserRole[] = ["admin", "doctor", "nurse", "receptionist", "cashier"];
 
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   admin: "Admin",
   doctor: "Doctor",
   nurse: "Nurse",
   receptionist: "Receptionist",
+  cashier: "Cashier",
 };
 
 export const ASSIGNABLE_USER_ROLE_OPTIONS = ASSIGNABLE_USER_ROLES.map((role) => ({

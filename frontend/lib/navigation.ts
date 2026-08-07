@@ -1,6 +1,26 @@
-import { CalendarDays, ClipboardList, LayoutDashboard, Mic, Settings, Users } from "lucide-react";
+import {
+  CalendarDays,
+  ClipboardList,
+  LayoutDashboard,
+  Mic,
+  PackagePlus,
+  Pill,
+  Receipt,
+  Settings,
+  Stethoscope,
+  UserPlus,
+  Users,
+  Warehouse,
+} from "lucide-react";
 
-import { DASHBOARD_HOME_ROLES, SETTINGS_ROLES, TRANSCRIBER_ROLES, hasRequiredRole } from "@/lib/rbac";
+import {
+  ADMIN_OPERATIONS_ROLES,
+  BILLING_ROLES,
+  DASHBOARD_HOME_ROLES,
+  SETTINGS_ROLES,
+  TRANSCRIBER_ROLES,
+  hasRequiredRole,
+} from "@/lib/rbac";
 import type { UserRole } from "@/types";
 
 export type DashboardNavItem = {
@@ -17,6 +37,12 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
   { href: "/dashboard/appointments", label: "Appointments", shortLabel: "Appts", icon: CalendarDays },
   { href: "/dashboard/transcriber", label: "Transcriber", shortLabel: "Mic", icon: Mic, roles: TRANSCRIBER_ROLES },
   { href: "/dashboard/records", label: "Records", icon: ClipboardList },
+  { href: "/dashboard/billing", label: "Billing", shortLabel: "Cash", icon: Receipt, roles: BILLING_ROLES },
+  { href: "/dashboard/doctors-staff", label: "Doctors and Staff", shortLabel: "Staff", icon: Stethoscope, roles: ADMIN_OPERATIONS_ROLES },
+  { href: "/dashboard/room", label: "Room", shortLabel: "Room", icon: Warehouse, roles: ADMIN_OPERATIONS_ROLES },
+  { href: "/dashboard/medicine", label: "Medicine", shortLabel: "Meds", icon: Pill, roles: ADMIN_OPERATIONS_ROLES },
+  { href: "/dashboard/analitik", label: "Analitik", shortLabel: "Stats", icon: PackagePlus, roles: ADMIN_OPERATIONS_ROLES },
+  { href: "/dashboard/inventory", label: "Inventory", shortLabel: "Stock", icon: UserPlus, roles: ADMIN_OPERATIONS_ROLES },
   { href: "/dashboard/settings", label: "Settings", shortLabel: "More", icon: Settings, roles: SETTINGS_ROLES },
 ];
 
