@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,6 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAppointments } from "@/hooks/useAppointments";
 import { appointmentStatusBadgeClass } from "@/lib/appointment-styles";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { calculateAge, formatDate } from "@/lib/patient-utils";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -45,6 +45,7 @@ export default function AppointmentDetailPage() {
   const [row, setRow] = useState<AppointmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
 
   const load = useCallback(async () => {
@@ -69,37 +70,40 @@ export default function AppointmentDetailPage() {
 
   async function saveNotes() {
     if (!row) return;
+    setActionError(null);
     try {
       const updated = await update(row.id, { notes: notes || null });
       setRow((r) => (r ? { ...r, notes: updated.notes } : null));
-    } catch {
-      /* ignore */
+    } catch (e: unknown) {
+      setActionError(getApiErrorMessage(e, "Could not save notes."));
     }
   }
 
   async function onStatusChange(next: AppointmentStatus) {
     if (!row || next === row.status) return;
+    setActionError(null);
     try {
       const updated = await update(row.id, { status: next });
       setRow((r) => (r ? { ...r, status: updated.status } : null));
-    } catch {
-      /* ignore */
+    } catch (e: unknown) {
+      setActionError(getApiErrorMessage(e, "Could not update status."));
     }
   }
 
   async function onCancelAppt() {
     if (!row || !window.confirm("Cancel this appointment?")) return;
+    setActionError(null);
     try {
       await cancel(row.id);
       await load();
-    } catch {
-      /* ignore */
+    } catch (e: unknown) {
+      setActionError(getApiErrorMessage(e, "Could not cancel the appointment."));
     }
   }
 
   if (loading) {
     return (
-      <MockupDashboardShell styles={styles} user={user} activeSection="Appointments">
+      <>
         <main className={styles.main}>
           <p className={styles.sectionSubtitle}>Loading appointment…</p>
         </main>
@@ -109,13 +113,13 @@ export default function AppointmentDetailPage() {
             <span className={styles.smallBtn}>⏳</span>
           </header>
         </aside>
-      </MockupDashboardShell>
+      </>
     );
   }
 
   if (error || !row) {
     return (
-      <MockupDashboardShell styles={styles} user={user} activeSection="Appointments">
+      <>
         <main className={styles.main}>
           <p className={styles.errorText}>{error}</p>
           <Button asChild variant="outline">
@@ -131,7 +135,7 @@ export default function AppointmentDetailPage() {
             <p className={styles.reminderText}>Check the appointment ID or return to the schedule list.</p>
           </div>
         </aside>
-      </MockupDashboardShell>
+      </>
     );
   }
 
@@ -139,7 +143,7 @@ export default function AppointmentDetailPage() {
   const doctor = row.doctor;
 
   return (
-    <MockupDashboardShell styles={styles} user={user} activeSection="Appointments">
+    <>
       <main className={styles.main}>
         <div className={styles.contentColumn}>
           <div>
@@ -237,6 +241,11 @@ export default function AppointmentDetailPage() {
                     Cancel appointment
                   </Button>
                 )}
+                {actionError && (
+                  <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+                    {actionError}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -266,6 +275,6 @@ export default function AppointmentDetailPage() {
           </div>
         </div>
       </aside>
-    </MockupDashboardShell>
+    </>
   );
 }

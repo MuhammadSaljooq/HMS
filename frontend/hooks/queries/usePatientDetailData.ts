@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import type { Appointment, MedicalRecord, MedicalRecordDetail, Patient, Transcription, Vitals } from "@/types";
 
 type PatientDetailBundle = {
@@ -43,6 +44,10 @@ export function usePatientDetailData(id: string) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["patient-detail", id] });
+    },
+    onError: (error: unknown) => {
+      // Surface the failure so the caller can keep the form open and show why.
+      return getApiErrorMessage(error, "Could not save vitals.");
     },
   });
 

@@ -35,7 +35,7 @@ function LoginForm() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { email: "admin@example.com", password: "" },
+    defaultValues: { email: "", password: "" },
     mode: "onSubmit",
   });
 
@@ -107,19 +107,13 @@ function LoginForm() {
 
           <div className={styles.leftStats}>
             <div className={styles.leftStat}>
-              <div className={styles.leftStatValue}>919</div>
-              <div className={styles.leftStatHint}>4%</div>
-              <div className={styles.leftStatLabel}>Total Patients</div>
+              <div className={styles.leftStatLabel}>Patient records</div>
             </div>
             <div className={styles.leftStat}>
-              <div className={styles.leftStatValue}>321</div>
-              <div className={styles.leftStatHint}>2%</div>
-              <div className={styles.leftStatLabel}>Daily Visits</div>
+              <div className={styles.leftStatLabel}>Appointment scheduling</div>
             </div>
             <div className={styles.leftStat}>
-              <div className={styles.leftStatValue}>12</div>
-              <div className={styles.leftStatHint}>beds</div>
-              <div className={styles.leftStatLabel}>Beds Available</div>
+              <div className={styles.leftStatLabel}>Clinical transcription</div>
             </div>
           </div>
         </section>

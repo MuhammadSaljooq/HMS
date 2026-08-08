@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
+import { MedicalRecordForm } from "@/components/records/MedicalRecordForm";
+import { useCreateRecord } from "@/hooks/queries/useCreateRecord";
 import { api } from "@/lib/api";
 import { calculateAge, formatDate } from "@/lib/patient-utils";
+import { RECORD_CREATE_ROLES, hasRequiredRole } from "@/lib/rbac";
 import { useAuthStore } from "@/store/authStore";
 import type { MedicalRecord, Patient } from "@/types";
 import styles from "../../theme-dashboard.module.css";
@@ -14,12 +16,17 @@ import styles from "../../theme-dashboard.module.css";
 export default function PatientRecordsPage() {
   const params = useParams<{ patientId: string }>();
   const patientId = params?.patientId ?? "";
-  const user = useAuthStore((s) => s.user);
+
+  const userRole = useAuthStore((s) => s.role);
+  const createRecord = useCreateRecord(patientId);
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+
+  const canCreate = !!userRole && hasRequiredRole(userRole, RECORD_CREATE_ROLES);
 
   const load = useCallback(async () => {
     if (!patientId) return;
@@ -52,13 +59,23 @@ export default function PatientRecordsPage() {
 
   const latestRecord = sortedRecords[0] ?? null;
 
+  const handleCreateRecord = useCallback(
+    async (payload: Record<string, unknown>) => {
+      const created = await createRecord.mutateAsync(payload);
+      await load();
+      setShowForm(false);
+      return created;
+    },
+    [createRecord, load],
+  );
+
   const pageTitle = patient ? patient.full_name : loading ? "Loading patient record..." : "Medical records";
   const pageSubtitle = patient
     ? `MRN ${patient.mrn} · DOB ${formatDate(patient.date_of_birth)} · ${calculateAge(patient.date_of_birth)} yrs`
     : "Review encounter history, diagnoses, and quick links for this chart.";
 
   return (
-    <MockupDashboardShell styles={styles} user={user} activeSection="Records">
+    <>
       <main className={styles.main}>
           <div className={styles.heroRow}>
             <div>
@@ -66,6 +83,15 @@ export default function PatientRecordsPage() {
               <p className={styles.heroSubtitle}>{pageSubtitle}</p>
             </div>
             <div className="flex flex-wrap gap-2">
+              {patient && canCreate ? (
+                <button
+                  type="button"
+                  className={styles.makeConfBtn}
+                  onClick={() => setShowForm((v) => !v)}
+                >
+                  {showForm ? "Close form" : "+ New record"}
+                </button>
+              ) : null}
               {patient ? (
                 <Link href={`/dashboard/patients/${patient.id}`} className={styles.makeConfBtn}>
                   + Open patient profile
@@ -103,6 +129,26 @@ export default function PatientRecordsPage() {
           </div>
 
           <div className={styles.contentColumn}>
+            {patient && canCreate && showForm ? (
+              <article className={styles.dataCard}>
+                <header className={styles.dataHeader}>
+                  <div>
+                    <h3 className={styles.dataTitle}>New medical record</h3>
+                    <p className={styles.heroSubtitle} style={{ margin: 0 }}>
+                      Document a diagnosis, notes, and any prescriptions for {patient.full_name}.
+                    </p>
+                  </div>
+                </header>
+                <div className="mt-4">
+                  <MedicalRecordForm
+                    patientId={patientId}
+                    onSubmit={handleCreateRecord}
+                    onCancel={() => setShowForm(false)}
+                  />
+                </div>
+              </article>
+            ) : null}
+
             <article className={styles.dataCard}>
               <header className={styles.dataHeader}>
                 <div>
@@ -221,6 +267,6 @@ export default function PatientRecordsPage() {
             + Search another chart
           </Link>
       </aside>
-    </MockupDashboardShell>
+    </>
   );
 }

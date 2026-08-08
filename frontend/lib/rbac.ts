@@ -4,6 +4,7 @@ export const DASHBOARD_HOME_ROLES: UserRole[] = ["admin"];
 export const SETTINGS_ROLES: UserRole[] = ["admin"];
 export const TRANSCRIBER_ROLES: UserRole[] = ["admin", "doctor"];
 export const NEW_PATIENT_ROLES: UserRole[] = ["admin", "doctor", "receptionist"];
+export const RECORD_CREATE_ROLES: UserRole[] = ["admin", "doctor"];
 export const ADMIN_OPERATIONS_ROLES: UserRole[] = ["admin"];
 export const BILLING_ROLES: UserRole[] = ["admin", "cashier"];
 export const BILLING_ADMIN_ROLES: UserRole[] = ["admin"];
