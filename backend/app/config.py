@@ -60,7 +60,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
 
-    # Whisper: omit to auto-detect; use "ur" or "en" as primary hint when code-switching is biased one way
+    # Whisper language hint. Must stay unset/None (auto-detect) for code-switched
+    # Urdu+English consultations: forcing a single language would drop the other language.
+    # Only set "ur"/"en" for known single-language audio; leave None for bilingual clinics.
     WHISPER_LANGUAGE: str | None = None
 
     # Celery (async transcription); Redis by default

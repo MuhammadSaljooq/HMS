@@ -79,7 +79,13 @@ export interface MedicalRecordDetail extends MedicalRecord {
   doctor?: User | null;
 }
 
-export type TranscriptionStatus = "pending" | "processing" | "completed" | "failed";
+export type TranscriptionStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "reviewed"
+  | "approved";
 
 export interface Transcription {
   id: string;
@@ -91,6 +97,11 @@ export interface Transcription {
   status: TranscriptionStatus;
   duration_seconds: number | null;
   created_at: string;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  edited?: boolean;
 }
 
 export interface TranscriptionListItem extends Transcription {

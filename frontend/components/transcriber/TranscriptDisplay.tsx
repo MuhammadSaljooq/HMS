@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-import { Check, ChevronDown, Copy, Link2, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { BadgeCheck, Check, ChevronDown, Copy, Link2, Loader2, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
-import type { TranscriptionPipelineResult, TranscriptionSections } from "@/types";
+import { Textarea } from "@/components/ui/textarea";
+import type { TranscriptionPipelineResult, TranscriptionSections, TranscriptionStatus } from "@/types";
 
 const SECTION_KEYS: { key: keyof TranscriptionSections; label: string }[] = [
   { key: "chief_complaint", label: "Chief complaint" },
@@ -33,17 +34,89 @@ function phaseLabel(phase: PipelinePhase) {
   }
 }
 
+/** Server-side review status for the selected transcription. */
+function reviewLabel(status: TranscriptionStatus | null) {
+  switch (status) {
+    case "approved":
+      return "Approved";
+    case "reviewed":
+      return "Reviewed";
+    case "completed":
+      return "Completed";
+    default:
+      return null;
+  }
+}
+
 type TranscriptDisplayProps = {
   phase: PipelinePhase;
   result: TranscriptionPipelineResult | null;
   error: string | null;
   /** True after this transcription is linked to a medical record. */
   isLinked: boolean;
+  /** Server review status of the selected transcription (completed/reviewed/approved). */
+  reviewStatus: TranscriptionStatus | null;
+  /** Whether the cleaned transcript has been manually edited. */
+  edited: boolean;
+  /** Persist edits to the cleaned transcript. */
+  onSaveEdits: (cleanedTranscript: string) => Promise<void>;
+  /** Mark the transcript approved. */
+  onApprove: () => Promise<void>;
   onAttachClick: () => void;
 };
 
-export function TranscriptDisplay({ phase, result, error, isLinked, onAttachClick }: TranscriptDisplayProps) {
+export function TranscriptDisplay({
+  phase,
+  result,
+  error,
+  isLinked,
+  reviewStatus,
+  edited,
+  onSaveEdits,
+  onApprove,
+  onAttachClick,
+}: TranscriptDisplayProps) {
   const sections = result?.sections;
+
+  const [draft, setDraft] = useState<string>("");
+  const [savingEdits, setSavingEdits] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  // Seed the editable draft whenever a different transcription / cleaned text loads.
+  useEffect(() => {
+    setDraft(result?.cleaned_transcript ?? "");
+    setActionError(null);
+  }, [result?.transcription_id, result?.cleaned_transcript]);
+
+  const isApproved = reviewStatus === "approved";
+  const dirty = draft !== (result?.cleaned_transcript ?? "");
+
+  const handleSaveEdits = useCallback(async () => {
+    if (!result) return;
+    setSavingEdits(true);
+    setActionError(null);
+    try {
+      await onSaveEdits(draft);
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : "Could not save transcript edits.");
+    } finally {
+      setSavingEdits(false);
+    }
+  }, [draft, onSaveEdits, result]);
+
+  const handleApprove = useCallback(async () => {
+    if (!result) return;
+    setApproving(true);
+    setActionError(null);
+    try {
+      await onApprove();
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : "Could not approve transcript.");
+    } finally {
+      setApproving(false);
+    }
+  }, [onApprove, result]);
 
   const hasStructured = useMemo(() => {
     if (!sections) return false;
@@ -94,7 +167,11 @@ export function TranscriptDisplay({ phase, result, error, isLinked, onAttachClic
             {!error && (phase === "idle" || (!result?.raw_transcript && phase === "completed")) && (
               <p className="text-slate-500">No raw transcript yet.</p>
             )}
-            {result?.raw_transcript && <p className="whitespace-pre-wrap">{result.raw_transcript}</p>}
+            {result?.raw_transcript && (
+              <p dir="auto" className="whitespace-pre-wrap">
+                {result.raw_transcript}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -109,6 +186,26 @@ export function TranscriptDisplay({ phase, result, error, isLinked, onAttachClic
             {result?.language_detected && (
               <Badge className="rounded-full border border-[#eadfd4] bg-[#fff7f2] px-3 py-1 font-medium text-[#b4542d] shadow-none hover:bg-[#fff7f2]">
                 {result.language_detected}
+              </Badge>
+            )}
+            {edited && (
+              <Badge className="gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-medium text-amber-700 shadow-none hover:bg-amber-50">
+                <Pencil className="h-3 w-3" />
+                Edited
+              </Badge>
+            )}
+            {reviewLabel(reviewStatus) && (
+              <Badge
+                className={
+                  reviewStatus === "approved"
+                    ? "gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 font-medium text-emerald-700 shadow-none hover:bg-emerald-50"
+                    : reviewStatus === "reviewed"
+                      ? "gap-1 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 font-medium text-sky-700 shadow-none hover:bg-sky-50"
+                      : "gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-medium text-slate-600 shadow-none hover:bg-slate-50"
+                }
+              >
+                {reviewStatus === "approved" && <BadgeCheck className="h-3 w-3" />}
+                {reviewLabel(reviewStatus)}
               </Badge>
             )}
             <Badge
@@ -129,23 +226,62 @@ export function TranscriptDisplay({ phase, result, error, isLinked, onAttachClic
           </div>
         </CardHeader>
         <CardContent className="space-y-4 p-6">
-          {result?.cleaned_transcript && !hasStructured && (
+          {result?.cleaned_transcript != null && phase === "completed" && (
             <div className="space-y-2">
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  Review &amp; edit note
+                </span>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   className="rounded-full border border-[#d8dde6] bg-white px-4 text-slate-700 hover:bg-slate-50"
-                  onClick={() => copyText(result.cleaned_transcript ?? "")}
+                  onClick={() => copyText(draft)}
                 >
                   <Copy className="mr-1 h-3 w-3" />
                   Copy note
                 </Button>
               </div>
-              <p className="whitespace-pre-wrap rounded-[24px] border border-[#edf0f5] bg-[#f7f8fa] p-4 text-sm leading-7 text-slate-700">
-                {result.cleaned_transcript}
-              </p>
+              {/* dir="auto" so mixed Urdu (RTL) + English renders with correct base direction. */}
+              <Textarea
+                dir="auto"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                disabled={isApproved || savingEdits}
+                rows={8}
+                className="min-h-[180px] whitespace-pre-wrap rounded-[24px] border border-[#edf0f5] bg-[#f7f8fa] p-4 text-sm leading-7 text-slate-700"
+                placeholder="Cleaned medical note…"
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full border border-[#d8dde6] bg-white px-4 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  disabled={isApproved || savingEdits || !dirty}
+                  onClick={() => void handleSaveEdits()}
+                >
+                  {savingEdits && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                  <Pencil className="mr-1 h-3 w-3" />
+                  Save edits
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="rounded-full bg-emerald-600 px-4 text-white hover:bg-emerald-700 disabled:opacity-50"
+                  disabled={isApproved || approving || dirty}
+                  onClick={() => void handleApprove()}
+                >
+                  {approving && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                  <BadgeCheck className="mr-1 h-3 w-3" />
+                  {isApproved ? "Approved" : "Approve"}
+                </Button>
+                {dirty && !isApproved && (
+                  <span className="text-xs text-slate-400">Save edits before approving.</span>
+                )}
+              </div>
+              {actionError && <p className="text-sm text-destructive">{actionError}</p>}
             </div>
           )}
 
@@ -172,7 +308,9 @@ export function TranscriptDisplay({ phase, result, error, isLinked, onAttachClic
                         Copy section
                       </Button>
                     </div>
-                    <p className="whitespace-pre-wrap">{text}</p>
+                    <p dir="auto" className="whitespace-pre-wrap">
+                      {text}
+                    </p>
                   </CollapsibleContent>
                 </Collapsible>
               );
@@ -182,7 +320,7 @@ export function TranscriptDisplay({ phase, result, error, isLinked, onAttachClic
             <p className="text-sm text-slate-500">No cleaned text returned.</p>
           )}
 
-          <div className="pt-2">
+          <div className="space-y-1 pt-2">
             <Button
               type="button"
               variant="outline"
@@ -193,6 +331,9 @@ export function TranscriptDisplay({ phase, result, error, isLinked, onAttachClic
               <Link2 className="mr-2 h-4 w-4" />
               {isLinked ? "Attached to patient record" : "Attach to patient record"}
             </Button>
+            {result && !isLinked && !isApproved && (
+              <p className="text-xs text-slate-400">Approve the transcript before attaching.</p>
+            )}
           </div>
         </CardContent>
       </Card>

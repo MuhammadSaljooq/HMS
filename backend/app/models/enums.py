@@ -23,6 +23,8 @@ class TranscriptionStatus(str, enum.Enum):
     processing = "processing"
     completed = "completed"
     failed = "failed"
+    reviewed = "reviewed"
+    approved = "approved"
 
 
 class InvoiceStatus(str, enum.Enum):

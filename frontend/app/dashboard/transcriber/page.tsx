@@ -7,22 +7,21 @@ import { AttachToRecordDialog } from "@/components/transcriber/AttachToRecordDia
 import { AudioRecorder } from "@/components/transcriber/AudioRecorder";
 import { TranscriptDisplay } from "@/components/transcriber/TranscriptDisplay";
 import { TranscriptionHistory } from "@/components/transcriber/TranscriptionHistory";
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import { RoleGuard } from "@/components/layout/RoleGuard";
 import { useTranscription } from "@/hooks/useTranscription";
 import { submitTranscriptionAudio, submitTranscriptionFromFile } from "@/lib/transcribe-api";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { TRANSCRIBER_ROLES } from "@/lib/rbac";
-import { useAuthStore } from "@/store/authStore";
-import type { Transcription, TranscriptionPipelineResult } from "@/types";
+import type { Transcription, TranscriptionPipelineResult, TranscriptionStatus } from "@/types";
 import styles from "../theme-dashboard.module.css";
 
 type Phase = "idle" | "pending" | "processing" | "completed" | "failed";
 
 function phaseFromStatus(s: TranscriptionPipelineResult["status"]): Phase {
   if (s === "failed") return "failed";
-  if (s === "completed") return "completed";
+  // reviewed/approved are post-completion states — keep the review surface visible.
+  if (s === "completed" || s === "reviewed" || s === "approved") return "completed";
   if (s === "pending" || s === "processing") return "processing";
   return "idle";
 }
@@ -41,7 +40,6 @@ function phaseLabel(phase: Phase) {
 }
 
 export default function TranscriberPage() {
-  const user = useAuthStore((s) => s.user);
   const {
     localRecent,
     remoteList,
@@ -49,6 +47,8 @@ export default function TranscriberPage() {
     listError,
     pushLocalResult,
     refreshRemoteList,
+    editTranscript,
+    approveTranscript,
     loadPipeline,
   } = useTranscription();
 
@@ -57,16 +57,40 @@ export default function TranscriberPage() {
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLinked, setIsLinked] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState<TranscriptionStatus | null>(null);
+  const [edited, setEdited] = useState(false);
   const [attachOpen, setAttachOpen] = useState(false);
 
   const refreshLinkedMeta = useCallback(async (transcriptionId: string) => {
     try {
       const { data } = await api.get<Transcription>(`/transcriptions/${transcriptionId}`);
       setIsLinked(!!data.medical_record_id);
+      setReviewStatus(data.status);
+      setEdited(!!data.edited);
     } catch {
       setIsLinked(false);
+      setReviewStatus(null);
+      setEdited(false);
     }
   }, []);
+
+  const handleSaveEdits = useCallback(
+    async (cleanedTranscript: string) => {
+      if (!result) return;
+      const updated = await editTranscript(result.transcription_id, cleanedTranscript);
+      setResult((prev) => (prev ? { ...prev, cleaned_transcript: updated.cleaned_transcript } : prev));
+      setReviewStatus(updated.status);
+      setEdited(!!updated.edited);
+    },
+    [editTranscript, result],
+  );
+
+  const handleApprove = useCallback(async () => {
+    if (!result) return;
+    const updated = await approveTranscript(result.transcription_id);
+    setReviewStatus(updated.status);
+    setEdited(!!updated.edited);
+  }, [approveTranscript, result]);
 
   useEffect(() => {
     void refreshRemoteList();
@@ -137,7 +161,7 @@ export default function TranscriberPage() {
 
   return (
     <RoleGuard roles={TRANSCRIBER_ROLES}>
-      <MockupDashboardShell styles={styles} user={user} activeSection="Transcriber">
+      <>
         <main className={styles.main}>
           <div className={styles.heroRow}>
             <div>
@@ -182,6 +206,10 @@ export default function TranscriberPage() {
               result={result}
               error={error}
               isLinked={isLinked}
+              reviewStatus={reviewStatus}
+              edited={edited}
+              onSaveEdits={handleSaveEdits}
+              onApprove={handleApprove}
               onAttachClick={() => result && setAttachOpen(true)}
             />
           </div>
@@ -241,13 +269,15 @@ export default function TranscriberPage() {
             open={attachOpen}
             onOpenChange={setAttachOpen}
             transcriptionId={result.transcription_id}
+            isApproved={reviewStatus === "approved"}
+            onApprove={handleApprove}
             onLinked={async () => {
               setIsLinked(true);
               await refreshRemoteList();
             }}
           />
         )}
-      </MockupDashboardShell>
+      </>
     </RoleGuard>
   );
 }

@@ -19,15 +19,17 @@ from app.models.enums import TranscriptionStatus
 logger = logging.getLogger(__name__)
 
 
-CLAUDE_SYSTEM_PROMPT = """You are a medical transcription specialist for a hospital in Pakistan. You receive raw speech-to-text output that may contain:
-- Code-switching between Urdu and English (common in Pakistani medical settings)
+CLAUDE_SYSTEM_PROMPT = """You are a medical transcription specialist for a hospital in Pakistan. You receive raw speech-to-text output from bilingual doctor-patient consultations that may contain:
+- Code-switching between Urdu and English within the same sentence (common in Pakistani medical settings)
 - Medical terminology in either language
 - Informal speech patterns, filler words, repetitions
 
+These consultations are genuinely bilingual. Faithfully preserve BOTH Urdu and English. Do NOT translate the whole note into English and do NOT drop either language.
+
 Your job is to:
-1. Produce a clean, professional English transcription
-2. Translate any Urdu portions into English accurately
-3. Preserve all medical terms, drug names, and dosages exactly
+1. Produce a clean, clinician-readable note that preserves both Urdu and English as spoken.
+2. Keep clinically meaningful Urdu terms in Urdu script where an English rendering would lose nuance; a bilingual Urdu+English note is acceptable and preferred over a lossy full translation.
+3. Preserve all medical terms, drug names, and dosages exactly, regardless of language.
 4. Structure the output as a medical note with these sections if detectable:
    - Chief Complaint
    - History of Present Illness
@@ -36,44 +38,49 @@ Your job is to:
    - Plan/Prescription
 5. Remove filler words (um, uh, acha, theek hai used as fillers)
 6. Fix obvious transcription errors using medical context
-7. Return ONLY the cleaned transcription, no commentary
+7. Do not fabricate findings, diagnoses, or prescriptions
+8. Return ONLY the cleaned transcription, no commentary
 
-If the audio is purely administrative (appointment booking, reception queries), just return a clean English paragraph without medical sections.
+If the audio is purely administrative (appointment booking, reception queries), just return a clean readable paragraph (bilingual where the speaker used both languages) without medical sections.
 """
 
-# Guides Whisper for Urdu–English medical speech without forcing a single language
+# Guides Whisper for code-switched Urdu+English medical speech without forcing a single language.
+# WHISPER_LANGUAGE must stay unset/auto (None) so both Urdu and English are captured.
 WHISPER_CONTEXT_PROMPT = (
-    "Medical consultation in Pakistan with Urdu and English mixed speech. "
+    "Bilingual medical consultation in Pakistan: doctor and patient code-switch "
+    "between Urdu and English within the same sentence. Transcribe both languages "
+    "faithfully, keeping Urdu speech in Urdu script and English speech in English; "
+    "do not translate or drop either language. "
     "Terms: chief complaint, fever, BP, sugar, diabetes, dard, zakham, "
     "tablet, injection, dose, allergy, chest, heart, sugar test, pathology."
 )
 
-GEMINI_TRANSCRIPTION_PROMPT = """You are an expert Pakistani medical audio transcriber and translator.
+GEMINI_TRANSCRIPTION_PROMPT = """You are an expert Pakistani medical audio transcriber for bilingual doctor-patient consultations.
 
-The audio may contain:
+Pakistani clinic consultations are naturally code-switched: speakers move between Urdu and English within the same sentence. The audio may contain:
 - Urdu
 - English
 - Roman Urdu
-- code-switching between Urdu and English
+- code-switching between Urdu and English within a single utterance
 - clinical shorthand and medicine names
 - background noise, overlapping speech, and informal filler words
 
-Your task is to understand the speech accurately, then convert it into clean professional English.
+Your task is to faithfully capture BOTH languages exactly as spoken, then produce a clinician-readable note. Do NOT silently translate everything into one language.
 
 Return strict JSON with exactly these keys:
-- raw_transcript: a near-verbatim transcript of the spoken audio, preserving the original language mix as much as possible
-- cleaned_transcript: a polished English transcription or medical note that translates all Urdu into clear natural English while preserving every clinically meaningful detail
-- language_detected: a short label such as "en", "ur", "roman-urdu", or "mixed"
+- raw_transcript: a near-verbatim transcript of the code-switched Urdu and English audio. Keep Urdu speech in Urdu script and English speech in English, exactly as spoken. Do NOT translate or drop either language.
+- cleaned_transcript: a clinician-readable clinical note. Keep clinically meaningful Urdu terms (in Urdu script) where an English rendering would lose nuance; a bilingual Urdu+English note is acceptable and preferred over a lossy full translation.
+- language_detected: a short label reflecting the actual language mix. Use "ur+en" when both Urdu and English are present, "en" for English only, "ur" for Urdu only, or "roman-urdu" for Roman Urdu.
 
 Critical rules:
 - Return JSON only. No markdown fences. No extra commentary.
-- Urdu must be translated into English in cleaned_transcript.
-- Preserve drug names, dosages, numbers, units, dates, durations, and symptoms exactly.
-- Do not hallucinate missing findings, diagnoses, or prescriptions.
+- Transcribe code-switched Urdu and English accurately; keep Urdu in Urdu script and English in English in raw_transcript. Do NOT translate or drop either language.
+- Preserve medical terms, drug names, and dosages verbatim regardless of language.
+- Preserve numbers, units, dates, durations, and symptoms exactly.
+- Do not fabricate or hallucinate missing findings, diagnoses, or prescriptions.
 - If a word is uncertain, use the closest reasonable transcription and keep it conservative.
-- Prefer medically accurate English over literal translation.
-- Expand short mixed phrases into proper English when clinically obvious.
-- If the audio is administrative rather than clinical, cleaned_transcript should be a clean English paragraph.
+- In cleaned_transcript, do not force a full English translation; retain Urdu clinical terms where translating would lose nuance (a bilingual note is acceptable).
+- If the audio is administrative rather than clinical, cleaned_transcript should be a clean readable paragraph (bilingual where the speaker used both languages).
 - If the content is clinical, cleaned_transcript should use clear section headings when supported by the audio:
   Chief Complaint
   History of Present Illness
@@ -81,10 +88,10 @@ Critical rules:
   Assessment
   Plan
 
-Examples of intended behavior:
-- "patient ko 3 din se bukhar hai" -> "The patient has had fever for 3 days."
-- "sugar zyada rehti hai" -> "Blood sugar remains high."
-- "dawa jaari rakhein" -> "Continue the medication."
+Examples of intended behavior (note both languages are preserved, not translated away):
+- raw: "patient ko 3 din se بخار ہے, aur cough bhi hai" -> cleaned keeps "بخار" and English "cough" as spoken.
+- raw: "sugar زیادہ رہتی ہے" -> keep "زیادہ" in Urdu script rather than translating the whole line to English.
+- raw: "dawa جاری رکھیں, twice daily" -> preserve the Urdu instruction and the English dosage as spoken.
 """
 
 
@@ -168,6 +175,20 @@ def _extract_gemini_text(payload: dict[str, Any]) -> str:
     raise RuntimeError(f"Gemini returned no text content. Feedback: {prompt_feedback!r}")
 
 
+def _build_gemini_request(model: str, api_key: str) -> tuple[str, dict[str, str]]:
+    """Build the Gemini generateContent URL and headers.
+
+    The API key is passed via the ``x-goog-api-key`` header, never in the URL
+    query string, so it does not leak into logs/proxies/error bodies.
+    """
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key,
+    }
+    return url, headers
+
+
 async def _gemini_transcribe_and_cleanup(
     audio_bytes: bytes,
     filename: str,
@@ -208,15 +229,13 @@ async def _gemini_transcribe_and_cleanup(
     r: httpx.Response | None = None
     async with httpx.AsyncClient(timeout=300.0) as client:
         for model in dict.fromkeys(models):
-            url = (
-                f"https://generativelanguage.googleapis.com/v1beta/models/"
-                f"{model}:generateContent?key={settings.GOOGLE_API_KEY}"
-            )
+            url, headers = _build_gemini_request(model, settings.GOOGLE_API_KEY)
             try:
                 r = await _http_post_with_retries(
                     client,
                     "POST",
                     url,
+                    headers=headers,
                     json=body,
                     max_attempts=2,
                 )
@@ -297,7 +316,7 @@ async def _claude_cleanup(raw: str) -> str:
         "content-type": "application/json",
     }
     body = {
-        "model": "claude-sonnet-4-20250514",
+        "model": "claude-sonnet-4-6",
         "max_tokens": 4096,
         "system": CLAUDE_SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": raw}],
@@ -437,13 +456,14 @@ async def process_transcription(db: AsyncSession, transcription_id: UUID) -> Tra
         tr.status = TranscriptionStatus.failed
         tr.raw_transcript = tr.raw_transcript or ""
         detail = exc.response.text[:2000] if exc.response is not None else str(exc)
-        tr.cleaned_transcript = f"HTTP error from upstream API ({exc.response.status_code}): {detail}"
-        logger.exception("Transcription HTTP failure")
-    except Exception as exc:  # noqa: BLE001
+        status_code = exc.response.status_code if exc.response is not None else "unknown"
+        logger.error("Transcription HTTP failure (%s): %s", status_code, detail)
+        tr.cleaned_transcript = "Transcription failed; see server logs."
+    except Exception:  # noqa: BLE001
         tr.status = TranscriptionStatus.failed
         tr.raw_transcript = tr.raw_transcript or ""
-        tr.cleaned_transcript = f"Transcription failed: {exc!s}"
         logger.exception("Transcription failure")
+        tr.cleaned_transcript = "Transcription failed; see server logs."
     await db.flush()
     await db.refresh(tr)
     return tr

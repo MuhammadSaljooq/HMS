@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { fetchPipelineResult } from "@/lib/transcribe-api";
-import type { TranscriptionListItem, TranscriptionPipelineResult } from "@/types";
+import type { Transcription, TranscriptionListItem, TranscriptionPipelineResult } from "@/types";
 
 const LS_KEY = "hms_transcriber_recent_v1";
 const MAX_LOCAL = 10;
@@ -72,6 +72,34 @@ export function useTranscription() {
     await refreshRemoteList();
   }, [refreshRemoteList]);
 
+  const editTranscript = useCallback(
+    async (transcriptionId: string, cleanedTranscript: string): Promise<Transcription> => {
+      try {
+        const { data } = await api.patch<Transcription>(`/transcriptions/${transcriptionId}`, {
+          cleaned_transcript: cleanedTranscript,
+        });
+        await refreshRemoteList();
+        return data;
+      } catch (e: unknown) {
+        throw new Error(getApiErrorMessage(e, "Could not save transcript edits."));
+      }
+    },
+    [refreshRemoteList],
+  );
+
+  const approveTranscript = useCallback(
+    async (transcriptionId: string): Promise<Transcription> => {
+      try {
+        const { data } = await api.post<Transcription>(`/transcriptions/${transcriptionId}/approve`);
+        await refreshRemoteList();
+        return data;
+      } catch (e: unknown) {
+        throw new Error(getApiErrorMessage(e, "Could not approve transcript."));
+      }
+    },
+    [refreshRemoteList],
+  );
+
   const loadPipeline = useCallback(async (transcriptionId: string) => {
     return fetchPipelineResult(transcriptionId);
   }, []);
@@ -84,6 +112,8 @@ export function useTranscription() {
     pushLocalResult,
     refreshRemoteList,
     linkToMedicalRecord,
+    editTranscript,
+    approveTranscript,
     loadPipeline,
   };
 }

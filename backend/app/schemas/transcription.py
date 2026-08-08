@@ -37,6 +37,15 @@ class TranscriptionRead(BaseModel):
     status: TranscriptionStatus
     duration_seconds: int | None
     created_at: datetime
+    edited: bool
+    reviewed_at: datetime | None
+    reviewed_by: uuid.UUID | None
+    approved_at: datetime | None
+    approved_by: uuid.UUID | None
+
+
+class TranscriptionEdit(BaseModel):
+    cleaned_transcript: str = Field(min_length=1)
 
 
 class TranscriptionListItem(TranscriptionRead):
