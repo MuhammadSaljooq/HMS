@@ -1,35 +1,19 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { visibleDashboardNav } from "@/lib/navigation";
 import { USER_ROLE_LABELS } from "@/lib/roles";
 import type { User } from "@/types";
 
-const TOP_NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/dashboard/patients", label: "Patient" },
-  { href: "/dashboard/doctors-staff", label: "Doctors and Staff" },
-  { href: "/dashboard/room", label: "Room" },
-  { href: "/dashboard/medicine", label: "Medicine" },
-  { href: "/dashboard/analitik", label: "Analitik" },
-  { href: "/dashboard/inventory", label: "Inventory" },
-] as const;
-
-const RAIL_PRIMARY_LINKS = [
-  { icon: "‹", href: "/dashboard", label: "Go to dashboard" },
-  { icon: "⇄", href: "/dashboard/patients", label: "Go to patients" },
-  { icon: "↓", href: "/dashboard/appointments", label: "Go to appointments" },
-  { icon: "☆", href: "/dashboard/transcriber", label: "Go to transcriber" },
-  { icon: "+", href: "/dashboard/patients/new", label: "Register new patient" },
-  { icon: "🗄", href: "/dashboard/records", label: "Go to records" },
-] as const;
-
-const RAIL_SECONDARY_LINKS = [
-  { icon: "📊", href: "/dashboard/doctors-staff", label: "Go to doctors and staff" },
-  { icon: "⚙", href: "/dashboard/settings", label: "Go to settings" },
-] as const;
-
 type MockupThemeStyles = Readonly<Record<string, string>>;
+type RailLink = {
+  href: string;
+  label: string;
+  icon: string;
+};
 
 export function MockupDashboardShell({
   styles,
@@ -42,8 +26,33 @@ export function MockupDashboardShell({
   activeSection?: string;
   children: ReactNode;
 }) {
-  const topNavLabels = new Set<string>(TOP_NAV_ITEMS.map((item) => item.label));
+  const pathname = usePathname();
+  const visibleNav = visibleDashboardNav(user?.role);
+  const topNavLabels = new Set<string>(visibleNav.map((item) => item.label));
   const showExtraActivePill = activeSection && !topNavLabels.has(activeSection);
+
+  const railPrimaryLinks: RailLink[] = [
+    ...visibleNav.filter((item) =>
+      ["/dashboard", "/dashboard/patients", "/dashboard/appointments", "/dashboard/transcriber", "/dashboard/records"].includes(
+        item.href,
+      ),
+    ).map((item) => ({
+      href: item.href,
+      label: item.label,
+      icon: item.shortLabel?.[0] ?? item.label[0],
+    })),
+    ...(user?.role === "admin" || user?.role === "doctor" || user?.role === "receptionist"
+      ? [{ href: "/dashboard/patients/new", label: "Register new patient", icon: "+" }]
+      : []),
+  ];
+
+  const railSecondaryLinks: RailLink[] = visibleNav
+    .filter((item) => ["/dashboard/doctors-staff", "/dashboard/settings"].includes(item.href))
+    .map((item) => ({
+      href: item.href,
+      label: item.label,
+      icon: item.shortLabel?.[0] ?? item.label[0],
+    }));
 
   return (
     <div className={styles.page}>
@@ -57,15 +66,21 @@ export function MockupDashboardShell({
         </div>
 
         <div className={styles.navLinks}>
-          {TOP_NAV_ITEMS.map((item) => (
-            <a
+          {visibleNav.map((item) => (
+            <Link
               key={item.href}
-              className={item.label === activeSection ? `${styles.navLink} ${styles.navLinkActive}` : styles.navLink}
+              className={
+                (item.href === "/dashboard" ? pathname === "/dashboard" || pathname === "/dashboard/" : pathname.startsWith(item.href))
+                  ? `${styles.navLink} ${styles.navLinkActive}`
+                  : styles.navLink
+              }
               href={item.href}
-              aria-current={item.label === activeSection ? "page" : undefined}
+              aria-current={
+                item.href === "/dashboard" ? (pathname === "/dashboard" || pathname === "/dashboard/" ? "page" : undefined) : pathname.startsWith(item.href) ? "page" : undefined
+              }
             >
               {item.label}
-            </a>
+            </Link>
           ))}
 
           {showExtraActivePill ? (
@@ -90,16 +105,16 @@ export function MockupDashboardShell({
 
       <div className={styles.layout}>
         <aside className={styles.leftRail}>
-          {RAIL_PRIMARY_LINKS.map((item) => (
-            <a key={item.href} className={styles.railBtn} href={item.href} aria-label={item.label} title={item.label}>
+          {railPrimaryLinks.map((item) => (
+            <Link key={item.href} className={styles.railBtn} href={item.href} aria-label={item.label} title={item.label}>
               {item.icon}
-            </a>
+            </Link>
           ))}
           <div className={styles.railSpacer} />
-          {RAIL_SECONDARY_LINKS.map((item) => (
-            <a key={item.href} className={styles.railBtn} href={item.href} aria-label={item.label} title={item.label}>
+          {railSecondaryLinks.map((item) => (
+            <Link key={item.href} className={styles.railBtn} href={item.href} aria-label={item.label} title={item.label}>
               {item.icon}
-            </a>
+            </Link>
           ))}
         </aside>
 

@@ -2,17 +2,13 @@
 
 import Link from "next/link";
 
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/store/authStore";
 
 import styles from "../theme-dashboard.module.css";
 
 export default function ForbiddenPage() {
-  const user = useAuthStore((s) => s.user);
-
   return (
-    <MockupDashboardShell styles={styles} user={user} activeSection="Dashboard">
+    <>
       <main className={styles.main}>
         <div className={styles.contentColumn}>
           <div className={styles.heroRow}>
@@ -54,6 +50,6 @@ export default function ForbiddenPage() {
           + Review role settings
         </Link>
       </aside>
-    </MockupDashboardShell>
+    </>
   );
 }

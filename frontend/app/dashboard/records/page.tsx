@@ -3,16 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import { Input } from "@/components/ui/input";
 import { usePatients } from "@/hooks/usePatients";
 import { calculateAge } from "@/lib/patient-utils";
-import { useAuthStore } from "@/store/authStore";
 import type { Patient } from "@/types";
 import styles from "../theme-dashboard.module.css";
 
 export default function RecordsHubPage() {
-  const user = useAuthStore((s) => s.user);
   const { list } = usePatients();
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Patient[]>([]);
@@ -58,7 +55,7 @@ export default function RecordsHubPage() {
   }, [hits]);
 
   return (
-    <MockupDashboardShell styles={styles} user={user} activeSection="Records">
+    <>
       <main className={styles.main}>
           <div className={styles.heroRow}>
             <div>
@@ -229,6 +226,6 @@ export default function RecordsHubPage() {
             + Browse all patients
           </Link>
       </aside>
-    </MockupDashboardShell>
+    </>
   );
 }

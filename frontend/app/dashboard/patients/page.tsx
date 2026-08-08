@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import {
   PatientTable,
   buildPatientRows,
@@ -13,8 +12,7 @@ import {
   type SortDir,
 } from "@/components/patients/PatientTable";
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePatients } from "@/hooks/usePatients";
-import { useAuthStore } from "@/store/authStore";
+import { usePatientDirectoryQuery } from "@/hooks/queries/usePatientDirectoryQuery";
 import styles from "./theme-patients.module.css";
 
 const tableThemeClassNames = {
@@ -64,7 +62,7 @@ function defaultDirFor(key: PatientSortKey): SortDir {
 
 function PatientsListSkeleton() {
   return (
-    <MockupDashboardShell styles={styles} user={null} activeSection="Patient">
+    <>
       <div className={styles.main}>
         <Skeleton className="h-14 w-72 rounded-md" />
         <div className={styles.statRow}>
@@ -79,7 +77,7 @@ function PatientsListSkeleton() {
         <Skeleton className="h-28 w-full rounded-xl" />
         <Skeleton className="h-36 w-full rounded-xl" />
       </div>
-    </MockupDashboardShell>
+    </>
   );
 }
 
@@ -87,8 +85,6 @@ function PatientsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const user = useAuthStore((s) => s.user);
-  const { list } = usePatients();
 
   const searchFromUrl = searchParams.get("search") ?? "";
   const pageNum = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
@@ -126,42 +122,18 @@ function PatientsPageContent() {
     [setParams],
   );
 
-  const [rows, setRows] = useState<PatientRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const directoryQuery = usePatientDirectoryQuery({
+    search: searchFromUrl.trim() || undefined,
+    skip: pageIndex * PAGE_SIZE,
+    limit: PAGE_SIZE,
+    sort_by: sortKey,
+    sort_order: sortDir,
+  });
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setLoadError(null);
-      try {
-        const data = await list({
-          search: searchFromUrl.trim() || undefined,
-          skip: pageIndex * PAGE_SIZE,
-          limit: PAGE_SIZE,
-          sort_by: sortKey,
-          sort_order: sortDir,
-        });
-        if (cancelled) return;
-
-        setRows(buildPatientRows(data.items));
-        setTotal(data.total);
-      } catch {
-        if (!cancelled) {
-          setRows([]);
-          setTotal(0);
-          setLoadError("Could not load patients. Try again.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [list, pageIndex, searchFromUrl, sortDir, sortKey]);
+  const rows = useMemo<PatientRow[]>(() => buildPatientRows(directoryQuery.items), [directoryQuery.items]);
+  const total = directoryQuery.total;
+  const loading = directoryQuery.loading;
+  const loadError = directoryQuery.error;
 
   const onSortChange = useCallback(
     (key: PatientSortKey) => {
@@ -198,7 +170,7 @@ function PatientsPageContent() {
     total === 0 ? "No visible rows" : `${pageIndex * PAGE_SIZE + 1}-${Math.min(total, (pageIndex + 1) * PAGE_SIZE)}`;
 
   return (
-    <MockupDashboardShell styles={styles} user={user} activeSection="Patient">
+    <>
       <main className={styles.main}>
         <div className={styles.heroRow}>
           <div>
@@ -330,7 +302,7 @@ function PatientsPageContent() {
           + Open records
           </Link>
       </aside>
-    </MockupDashboardShell>
+    </>
   );
 }
 

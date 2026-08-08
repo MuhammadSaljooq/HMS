@@ -15,7 +15,6 @@ import {
   YAxis,
 } from "recharts";
 
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import { VitalsForm } from "@/components/patients/VitalsForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { calculateAge, formatDate } from "@/lib/patient-utils";
 import { usePatientDetailData } from "@/hooks/queries/usePatientDetailData";
-import { useAuthStore } from "@/store/authStore";
 import { usePatientStore } from "@/store/patientStore";
 import type { Appointment, MedicalRecord, MedicalRecordDetail, Transcription, Vitals } from "@/types";
 import styles from "../../theme-dashboard.module.css";
@@ -47,7 +45,6 @@ function statusBadgeVariant(s: string): "default" | "secondary" | "destructive" 
 export default function PatientDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const user = useAuthStore((s) => s.user);
   const id = params?.id ?? "";
   const { detailQuery, addVitalsMutation, fetchRecordDetail } = usePatientDetailData(id);
   const patient = detailQuery.data?.patient ?? null;
@@ -127,7 +124,7 @@ export default function PatientDetailPage() {
 
   if (loading && !patient) {
     return (
-      <MockupDashboardShell styles={styles} user={user} activeSection="Patient">
+      <>
         <main className={styles.main}>
           <div className={styles.contentColumn}>
             <Skeleton className="h-10 w-52 rounded-md" />
@@ -143,13 +140,13 @@ export default function PatientDetailPage() {
           <Skeleton className="h-32 w-full rounded-2xl" />
           <Skeleton className="h-40 w-full rounded-2xl" />
         </aside>
-      </MockupDashboardShell>
+      </>
     );
   }
 
   if (!patient) {
     return (
-      <MockupDashboardShell styles={styles} user={user} activeSection="Patient">
+      <>
         <main className={styles.main}>
           <div className={styles.contentColumn}>
             <div className={styles.heroRow}>
@@ -185,14 +182,14 @@ export default function PatientDetailPage() {
             + Open patient registry
           </Link>
         </aside>
-      </MockupDashboardShell>
+      </>
     );
   }
 
   const age = calculateAge(patient.date_of_birth);
 
   return (
-    <MockupDashboardShell styles={styles} user={user} activeSection="Patient">
+    <>
       <main className={styles.main}>
         <div className={styles.heroRow}>
           <div>
@@ -610,6 +607,6 @@ export default function PatientDetailPage() {
           + Browse all patients
         </Link>
       </aside>
-    </MockupDashboardShell>
+    </>
   );
 }

@@ -2,21 +2,18 @@
 
 import Link from "next/link";
 
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import { PatientForm } from "@/components/patients/PatientForm";
 import { RoleGuard } from "@/components/layout/RoleGuard";
 import { NEW_PATIENT_ROLES } from "@/lib/rbac";
 import { usePatients } from "@/hooks/usePatients";
-import { useAuthStore } from "@/store/authStore";
 import styles from "../theme-patients.module.css";
 
 export default function NewPatientPage() {
   const { create } = usePatients();
-  const user = useAuthStore((s) => s.user);
 
   return (
     <RoleGuard roles={NEW_PATIENT_ROLES}>
-      <MockupDashboardShell styles={styles} user={user} activeSection="Patient">
+      <>
         <main className={styles.main}>
           <div className={styles.heroRow}>
             <div>
@@ -112,7 +109,7 @@ export default function NewPatientPage() {
             </Link>
           </div>
         </aside>
-      </MockupDashboardShell>
+      </>
     </RoleGuard>
   );
 }

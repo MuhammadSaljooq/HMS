@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { isDashboardRouteAllowed } from "@/lib/rbac";
+import { getDefaultDashboardPath, isDashboardRouteAllowed } from "@/lib/rbac";
+import type { UserRole } from "@/types";
 
 const ACCESS_COOKIE = process.env.NEXT_PUBLIC_ACCESS_TOKEN_COOKIE_NAME ?? "access_token";
 const REFRESH_COOKIE = process.env.NEXT_PUBLIC_REFRESH_TOKEN_COOKIE_NAME ?? "refresh_token";
@@ -69,7 +70,7 @@ export function middleware(request: NextRequest) {
   if (pathname === "/") {
     const accessSession = accessSessionFromRequest(request);
     if (accessSession) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL(getDefaultDashboardPath(accessSession.role as UserRole), request.url));
     }
     return NextResponse.redirect(new URL("/login", request.url));
   }

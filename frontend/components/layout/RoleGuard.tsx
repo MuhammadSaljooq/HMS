@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { hasRequiredRole } from "@/lib/rbac";
 import { useAuthStore } from "@/store/authStore";
 import type { UserRole } from "@/types";
 
@@ -15,7 +16,7 @@ export function RoleGuard({ roles, children }: RoleGuardProps) {
   const user = useAuthStore((s) => s.user);
   const role = user?.role;
 
-  const allowed = role === "admin" || (role && roles.includes(role));
+  const allowed = !!role && hasRequiredRole(role, roles);
 
   if (!user) {
     return (

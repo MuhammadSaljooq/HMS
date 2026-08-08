@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { DashboardChrome } from "@/components/layout/DashboardChrome";
 import { useAuthStore } from "@/store/authStore";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -37,5 +38,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  return <div className="min-h-screen bg-background">{children}</div>;
+  return <DashboardChrome>{children}</DashboardChrome>;
 }

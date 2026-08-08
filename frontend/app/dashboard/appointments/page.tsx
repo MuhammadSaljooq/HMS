@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { AppointmentCalendar } from "@/components/appointments/AppointmentCalendar";
 import { AppointmentForm } from "@/components/appointments/AppointmentForm";
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,7 +82,7 @@ export default function AppointmentsPage() {
   }, [rows]);
 
   return (
-    <MockupDashboardShell styles={styles} user={user} activeSection="Appointments">
+    <>
       <main className={styles.main}>
           <div className={styles.heroRow}>
             <div>
@@ -318,6 +317,6 @@ export default function AppointmentsPage() {
         defaultDoctorId={filterDoctor}
         onSaved={() => void reloadRows()}
       />
-    </MockupDashboardShell>
+    </>
   );
 }
