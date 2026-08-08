@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { RoleGuard } from "@/components/layout/RoleGuard";
-import { MockupDashboardShell } from "@/components/layout/MockupDashboardShell";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { api } from "@/lib/api";
 import { LOGIN_ROLE_OPTIONS, USER_ROLE_LABELS } from "@/lib/roles";
@@ -12,7 +11,6 @@ import { SETTINGS_ROLES } from "@/lib/rbac";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuthStore } from "@/store/authStore";
 import type { User, UserRole } from "@/types";
 import styles from "../theme-dashboard.module.css";
 
@@ -31,7 +29,6 @@ const INITIAL_FORM: CreateUserForm = {
 };
 
 export default function SettingsPage() {
-  const user = useAuthStore((s) => s.user);
   const [form, setForm] = useState<CreateUserForm>(INITIAL_FORM);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof CreateUserForm, string>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -52,7 +49,8 @@ export default function SettingsPage() {
     if (!values.full_name.trim()) nextErrors.full_name = "Full name is required.";
     if (!values.email.trim()) nextErrors.email = "Email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) nextErrors.email = "Enter a valid email.";
-    if (values.password.length < 8) nextErrors.password = "Password must be at least 8 characters.";
+    if (values.password.length < 12 || !/[A-Za-z]/.test(values.password) || !/[0-9]/.test(values.password))
+      nextErrors.password = "Password must be at least 12 characters and include a letter and a digit.";
     if (!values.role) nextErrors.role = "Role is required.";
     return nextErrors;
   }
@@ -86,7 +84,7 @@ export default function SettingsPage() {
 
   return (
     <RoleGuard roles={SETTINGS_ROLES}>
-      <MockupDashboardShell styles={styles} user={user} activeSection="Settings">
+      <>
         <main className={styles.main}>
             <div className={styles.heroRow}>
               <div>
@@ -162,10 +160,13 @@ export default function SettingsPage() {
                         type="password"
                         autoComplete="new-password"
                         className="h-11 bg-white"
-                        placeholder="Minimum 8 characters"
+                        placeholder="At least 12 characters"
                         value={form.password}
                         onChange={(event) => updateForm("password", event.target.value)}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        At least 12 characters, including a letter and a digit.
+                      </p>
                       {fieldErrors.password ? <p className="text-sm text-destructive">{fieldErrors.password}</p> : null}
                     </div>
 
@@ -268,7 +269,7 @@ export default function SettingsPage() {
               + Review records access
             </Link>
         </aside>
-      </MockupDashboardShell>
+      </>
     </RoleGuard>
   );
 }

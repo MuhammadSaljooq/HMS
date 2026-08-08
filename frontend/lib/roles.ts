@@ -45,4 +45,10 @@ export const LOGIN_ROLE_OPTIONS: Array<{
     landingLabel: "Appointments",
     helperText: "Start with front-desk scheduling and patient registration tasks.",
   },
+  {
+    role: "cashier",
+    label: USER_ROLE_LABELS.cashier,
+    landingLabel: "Billing",
+    helperText: "Record patient fees and payments and run daily reconciliation.",
+  },
 ];
