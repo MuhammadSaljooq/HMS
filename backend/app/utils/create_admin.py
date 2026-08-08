@@ -58,7 +58,10 @@ async def _run(email: str, password: str, full_name: str, *, force: bool) -> Non
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create an HMS admin user.")
     parser.add_argument("--email", help="Admin email address")
-    parser.add_argument("--password", help="Password (min 8 characters); omit to prompt securely")
+    parser.add_argument(
+        "--password",
+        help="Password (min 12 characters, must include a letter and a digit); omit to prompt securely",
+    )
     parser.add_argument("--full-name", dest="full_name", default="", help="Display name (default: derived from email)")
     parser.add_argument("--force", action="store_true", help="Create admin even if other users already exist")
     args = parser.parse_args()
@@ -76,8 +79,8 @@ def main() -> None:
             print("Passwords do not match.", file=sys.stderr)
             sys.exit(1)
 
-    if len(password) < 8:
-        print("Password must be at least 8 characters.", file=sys.stderr)
+    if len(password) < 12:
+        print("Password must be at least 12 characters.", file=sys.stderr)
         sys.exit(1)
 
     local = email.split("@", 1)[0].replace(".", " ").replace("_", " ").strip()

@@ -10,6 +10,11 @@ from app.models.enums import UserRole
 from app.schemas.user import UserCreate
 from app.utils.security import create_access_token, create_refresh_token, hash_password, verify_password
 
+# Precomputed once at import time. Used to keep authentication constant-time when
+# the account is missing or inactive, so we always spend a bcrypt verify and do not
+# leak account existence/state through a timing side-channel.
+_DUMMY_HASH = hash_password("not-a-real-password-placeholder")
+
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.execute(select(User).where(User.email == email.lower()))
@@ -19,6 +24,9 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
 async def authenticate_user(db: AsyncSession, email: str, password: str) -> User | None:
     user = await get_user_by_email(db, email)
     if user is None or not user.is_active:
+        # Perform a dummy verify so the response time does not reveal whether the
+        # account exists or is active. Result is discarded.
+        verify_password(password, _DUMMY_HASH)
         return None
     if not verify_password(password, user.password_hash):
         return None

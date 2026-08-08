@@ -10,7 +10,7 @@ services:
     plan: starter
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
-    healthCheckPath: /health
+    healthCheckPath: /health/ready
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -38,6 +38,12 @@ services:
         value: "true"
       - key: COOKIE_SAMESITE
         value: "lax"
+      - key: APP_ENV
+        value: "production"
+      - key: DEBUG
+        value: "false"
+      - key: SQL_ECHO
+        value: "false"
 
   - type: worker
     name: hms-celery-worker

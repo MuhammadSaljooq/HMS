@@ -19,6 +19,7 @@ TZ = ZoneInfo("Asia/Karachi")
 from app.models import Invoice, InvoiceLineItem, Patient, Payment, ServiceCatalog, User
 from app.models.enums import InvoiceStatus, PaymentMethod, PaymentType
 from app.services import audit_service, billing_calc
+from app.services.soft_delete import not_deleted
 
 
 # ---- Number generators ----
@@ -77,7 +78,7 @@ async def lookup_patients(db, *, q, limit=20):
     like = f"%{q}%"
     stmt = (
         select(Patient)
-        .where(or_(Patient.full_name.ilike(like), Patient.mrn.ilike(like)))
+        .where(or_(Patient.full_name.ilike(like), Patient.mrn.ilike(like)), not_deleted(Patient))
         .order_by(Patient.full_name)
         .limit(limit)
     )
@@ -107,7 +108,8 @@ async def _recompute_invoice(db, invoice):
 
 # ---- Invoice lifecycle ----
 async def create_invoice(db, *, actor, patient_id, appointment_id, medical_record_id, notes, discount_total, tax_total):
-    if await db.get(Patient, patient_id) is None:
+    _patient = await db.get(Patient, patient_id)
+    if _patient is None or _patient.deleted_at is not None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found.")
     inv = Invoice(
         patient_id=patient_id,

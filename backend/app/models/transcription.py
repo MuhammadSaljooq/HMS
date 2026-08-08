@@ -10,12 +10,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.enums import TranscriptionStatus
+from app.models.mixins import SoftDeleteMixin
 
 if TYPE_CHECKING:
     from app.models.medical_record import MedicalRecord
 
 
-class Transcription(Base):
+class Transcription(Base, SoftDeleteMixin):
     __tablename__ = "transcriptions"
 
     id: Mapped[uuid.UUID] = mapped_column(

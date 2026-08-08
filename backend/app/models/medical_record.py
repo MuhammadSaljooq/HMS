@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.models.mixins import SoftDeleteMixin
 
 if TYPE_CHECKING:
     from app.models.appointment import Appointment
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class MedicalRecord(Base):
+class MedicalRecord(Base, SoftDeleteMixin):
     __tablename__ = "medical_records"
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -35,6 +36,12 @@ class MedicalRecord(Base):
     )
     diagnosis: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
+    )
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

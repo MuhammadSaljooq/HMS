@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "National Eye Care Hospital API"
     APP_ENV: Literal["development", "staging", "production"] = "development"
     DEBUG: bool = False
+    SQL_ECHO: bool = False
 
     SECRET_KEY: str = "dev-secret-change-in-production"
     JWT_ALGORITHM: str = "HS256"
@@ -91,6 +92,10 @@ class Settings(BaseSettings):
             raise ValueError("SECRET_KEY must be configured to a non-default value in staging/production.")
         if is_prod_like and not self.COOKIE_SECURE:
             raise ValueError("COOKIE_SECURE must be true in staging/production.")
+        if is_prod_like and self.DEBUG is True:
+            raise ValueError("DEBUG must be false in staging/production.")
+        if is_prod_like and self.SQL_ECHO is True:
+            raise ValueError("SQL_ECHO must be false in staging/production.")
         return self
 
 

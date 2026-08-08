@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Appointment, MedicalRecord, Patient, User
 from app.models.enums import UserRole
 from app.schemas.patient import PatientCreate, PatientUpdate
+from app.services.soft_delete import not_deleted
 
 
 async def generate_unique_mrn(db: AsyncSession) -> str:
@@ -24,8 +25,12 @@ async def generate_unique_mrn(db: AsyncSession) -> str:
 
 
 async def doctor_patient_ids(db: AsyncSession, doctor_id: UUID) -> set[UUID]:
-    appt = select(Appointment.patient_id).where(Appointment.doctor_id == doctor_id)
-    rec = select(MedicalRecord.patient_id).where(MedicalRecord.doctor_id == doctor_id)
+    appt = select(Appointment.patient_id).where(
+        Appointment.doctor_id == doctor_id, not_deleted(Appointment)
+    )
+    rec = select(MedicalRecord.patient_id).where(
+        MedicalRecord.doctor_id == doctor_id, not_deleted(MedicalRecord)
+    )
     ids: set[UUID] = set()
     for row in (await db.execute(appt)).all():
         ids.add(row[0])
@@ -119,8 +124,8 @@ async def list_patients(
     sort_by: str | None = None,
     sort_order: str = "desc",
 ) -> tuple[list[Patient], int]:
-    stmt = select(Patient)
-    count_stmt = select(func.count()).select_from(Patient)
+    stmt = select(Patient).where(not_deleted(Patient))
+    count_stmt = select(func.count()).select_from(Patient).where(not_deleted(Patient))
 
     if user.role == UserRole.doctor:
         allowed_ids = await doctor_patient_ids(db, user.id)

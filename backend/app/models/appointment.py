@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.enums import AppointmentStatus
+from app.models.mixins import SoftDeleteMixin
 
 if TYPE_CHECKING:
     from app.models.medical_record import MedicalRecord
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Appointment(Base):
+class Appointment(Base, SoftDeleteMixin):
     __tablename__ = "appointments"
 
     id: Mapped[uuid.UUID] = mapped_column(
