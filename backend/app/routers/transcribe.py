@@ -18,7 +18,12 @@ from app.schemas.transcription import (
     TranscriptionPipelineResult,
     TranscriptionSections,
 )
-from app.services import patient_service, storage_service, transcription_service
+from app.services import storage_service, transcription_service, transcription_workflow_service
+from app.services.authorization_service import (
+    can_read_unlinked_transcription,
+    ensure_can_attach_transcription_to_record,
+    ensure_can_view_record,
+)
 from app.utils.deps import get_current_user, get_db, require_role
 
 logger = logging.getLogger(__name__)
@@ -35,15 +40,9 @@ async def _optional_record_access(db: AsyncSession, current: User, medical_recor
     if medical_record_id is None:
         return
     record = await db.get(MedicalRecord, medical_record_id)
-    if record is None:
+    if record is None or record.deleted_at is not None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medical record not found.")
-    if not await patient_service.user_can_view_patient(db, current, record.patient_id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied for linked record.")
-    if current.role == UserRole.doctor and record.doctor_id != current.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Doctors may only attach transcriptions to their own medical records.",
-        )
+    await ensure_can_attach_transcription_to_record(db, current, record)
 
 
 def _validate_audio(file: UploadFile, raw_size: int) -> str:
@@ -90,16 +89,13 @@ def _to_pipeline_result(tr: Transcription) -> TranscriptionPipelineResult:
 
 async def _assert_can_read_transcription(db: AsyncSession, current: User, tr: Transcription) -> None:
     if tr.medical_record_id is None:
-        if current.role not in (UserRole.admin, UserRole.doctor):
+        if not can_read_unlinked_transcription(current):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
         return
     record = await db.get(MedicalRecord, tr.medical_record_id)
-    if record is None:
+    if record is None or record.deleted_at is not None:
         return
-    if not await patient_service.user_can_view_patient(db, current, record.patient_id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
-    if current.role == UserRole.doctor and record.doctor_id != current.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
+    await ensure_can_view_record(db, current, record)
 
 
 @router.post("", response_model=TranscriptionPipelineResult, status_code=status.HTTP_201_CREATED)
@@ -132,15 +128,12 @@ async def transcribe_sync(
     await _optional_record_access(db, current, medical_record_id)
 
     url = await storage_service.save_upload(file, prefix="transcriptions")
-    tr = Transcription(
+    tr = await transcription_workflow_service.create_pending_transcription(
+        db,
         medical_record_id=medical_record_id,
         audio_file_url=url,
-        status=TranscriptionStatus.pending,
         duration_seconds=duration_seconds,
     )
-    db.add(tr)
-    await db.flush()
-    await db.refresh(tr)
 
     tr = await transcription_service.process_transcription(db, tr.id)
     await db.commit()
@@ -171,15 +164,12 @@ async def transcribe_async(
     await _optional_record_access(db, current, medical_record_id)
 
     url = await storage_service.save_upload(file, prefix="transcriptions")
-    tr = Transcription(
+    tr = await transcription_workflow_service.create_pending_transcription(
+        db,
         medical_record_id=medical_record_id,
         audio_file_url=url,
-        status=TranscriptionStatus.pending,
         duration_seconds=duration_seconds,
     )
-    db.add(tr)
-    await db.flush()
-    await db.refresh(tr)
     await db.commit()
 
     try:
@@ -246,8 +236,6 @@ async def get_transcription_result(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(get_current_user)],
 ) -> TranscriptionPipelineResult:
-    tr = await db.get(Transcription, transcription_id)
-    if tr is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transcription not found.")
+    tr = await transcription_workflow_service.get_transcription_or_404(db, transcription_id)
     await _assert_can_read_transcription(db, current, tr)
     return _to_pipeline_result(tr)

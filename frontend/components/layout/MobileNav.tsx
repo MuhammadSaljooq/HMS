@@ -2,46 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ClipboardList, LayoutDashboard, Mic, Settings, Users } from "lucide-react";
 
+import { visibleDashboardNav } from "@/lib/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
-import type { UserRole } from "@/types";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  roles?: UserRole[];
-};
-
-const nav: NavItem[] = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/dashboard/patients", label: "Patients", icon: Users },
-  { href: "/dashboard/appointments", label: "Appts", icon: CalendarDays },
-  { href: "/dashboard/transcriber", label: "Mic", icon: Mic, roles: ["doctor", "admin"] },
-  { href: "/dashboard/records", label: "Records", icon: ClipboardList },
-  { href: "/dashboard/settings", label: "More", icon: Settings, roles: ["admin"] },
-];
-
-function canSeeNavItem(role: UserRole | null | undefined, item: NavItem): boolean {
-  if (!role) return false;
-  if (role === "admin") return true;
-  if (!item.roles) return true;
-  return item.roles.includes(role);
-}
 
 export function MobileNav() {
   const pathname = usePathname();
   const role = useAuthStore((s) => s.user?.role);
-  const visible = nav.filter((item) => canSeeNavItem(role, item));
+  const visible = visibleDashboardNav(role);
 
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-card/95 backdrop-blur md:hidden safe-area-pb"
       aria-label="Mobile navigation"
     >
-      {visible.map(({ href, label, icon: Icon }) => {
+      {visible.map(({ href, shortLabel, label, icon: Icon }) => {
         const active =
           href === "/dashboard"
             ? pathname === "/dashboard" || pathname === "/dashboard/"
@@ -56,7 +32,7 @@ export function MobileNav() {
             )}
           >
             <Icon className="h-5 w-5" />
-            <span>{label}</span>
+            <span>{shortLabel ?? label}</span>
           </Link>
         );
       })}

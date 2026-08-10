@@ -6,18 +6,18 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from jose import JWTError
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.models import User
 from app.models.enums import UserRole
 from app.rate_limit import limiter
-from app.schemas.user import AuthUserResponse, LoginRequest, UserCreate, UserRead
-from app.services import auth_service
+from app.schemas.user import AuthUserResponse, ChangePasswordRequest, LoginRequest, UserCreate, UserRead
+from app.services import audit_service, auth_service
 from app.services.token_denylist import is_refresh_token_revoked, revoke_refresh_token
 from app.utils.deps import get_current_user, get_db, require_role
-from app.utils.security import decode_refresh_token
+from app.utils.security import decode_refresh_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 settings = get_settings()
@@ -95,6 +95,7 @@ async def logout(request: Request) -> Response:
     response_model=AuthUserResponse,
     status_code=status.HTTP_200_OK,
 )
+@limiter.limit("20/minute")
 async def refresh_session(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -142,12 +143,42 @@ async def read_me(current: Annotated[User, Depends(get_current_user)]) -> User:
     return current
 
 
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("10/minute")
+async def change_password(
+    request: Request,
+    body: ChangePasswordRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(get_current_user)],
+) -> Response:
+    if not verify_password(body.current_password, current.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+    current.password_hash = hash_password(body.new_password)
+    await db.flush()
+    await audit_service.record(
+        db,
+        actor=current,
+        action="user.change_password",
+        entity_type="user",
+        entity_id=current.id,
+        metadata=None,
+        ip=request.client.host if request.client else None,
+    )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post(
     "/register",
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("20/minute")
 async def register_user(
+    request: Request,
     body: UserCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
     _: Annotated[User, Depends(require_role(UserRole.admin))],
@@ -165,7 +196,9 @@ async def register_user(
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("5/minute")
 async def bootstrap_first_admin(
+    request: Request,
     body: UserCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
     x_bootstrap_token: Annotated[str | None, Header(alias="X-Bootstrap-Token")] = None,
@@ -181,6 +214,9 @@ async def bootstrap_first_admin(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Bootstrap is disabled unless BOOTSTRAP_ADMIN_TOKEN is configured.",
         )
+    # Serialize concurrent bootstraps with a transaction-scoped advisory lock so the
+    # count-check + insert cannot race and create more than one first admin.
+    await db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": 91847})
     count = int((await db.execute(select(func.count()).select_from(User))).scalar_one())
     if count > 0:
         raise HTTPException(

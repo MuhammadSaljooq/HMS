@@ -8,6 +8,7 @@ class UserRole(str, enum.Enum):
     doctor = "doctor"
     nurse = "nurse"
     receptionist = "receptionist"
+    cashier = "cashier"
 
 
 class AppointmentStatus(str, enum.Enum):
@@ -22,3 +23,26 @@ class TranscriptionStatus(str, enum.Enum):
     processing = "processing"
     completed = "completed"
     failed = "failed"
+    reviewed = "reviewed"
+    approved = "approved"
+
+
+class InvoiceStatus(str, enum.Enum):
+    draft = "draft"
+    issued = "issued"
+    partially_paid = "partially_paid"
+    paid = "paid"
+    void = "void"
+
+
+class PaymentMethod(str, enum.Enum):
+    cash = "cash"
+    card = "card"
+    bank_transfer = "bank_transfer"
+    mobile_wallet = "mobile_wallet"
+    other = "other"
+
+
+class PaymentType(str, enum.Enum):
+    payment = "payment"
+    refund = "refund"

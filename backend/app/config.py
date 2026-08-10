@@ -27,9 +27,10 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    APP_NAME: str = "HMS API"
+    APP_NAME: str = "National Eye Care Hospital API"
     APP_ENV: Literal["development", "staging", "production"] = "development"
     DEBUG: bool = False
+    SQL_ECHO: bool = False
 
     SECRET_KEY: str = "dev-secret-change-in-production"
     JWT_ALGORITHM: str = "HS256"
@@ -53,10 +54,15 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str | None = None
     S3_PUBLIC_BASE_URL: str | None = None
 
+    GOOGLE_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_FALLBACK_MODEL: str | None = "gemini-2.0-flash"
     OPENAI_API_KEY: str | None = None
     ANTHROPIC_API_KEY: str | None = None
 
-    # Whisper: omit to auto-detect; use "ur" or "en" as primary hint when code-switching is biased one way
+    # Whisper language hint. Must stay unset/None (auto-detect) for code-switched
+    # Urdu+English consultations: forcing a single language would drop the other language.
+    # Only set "ur"/"en" for known single-language audio; leave None for bilingual clinics.
     WHISPER_LANGUAGE: str | None = None
 
     # Celery (async transcription); Redis by default
@@ -88,6 +94,10 @@ class Settings(BaseSettings):
             raise ValueError("SECRET_KEY must be configured to a non-default value in staging/production.")
         if is_prod_like and not self.COOKIE_SECURE:
             raise ValueError("COOKIE_SECURE must be true in staging/production.")
+        if is_prod_like and self.DEBUG is True:
+            raise ValueError("DEBUG must be false in staging/production.")
+        if is_prod_like and self.SQL_ECHO is True:
+            raise ValueError("SQL_ECHO must be false in staging/production.")
         return self
 
 

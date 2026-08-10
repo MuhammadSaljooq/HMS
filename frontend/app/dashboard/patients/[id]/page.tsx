@@ -23,17 +23,17 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { calculateAge, formatDate } from "@/lib/patient-utils";
+import { usePatientDetailData } from "@/hooks/queries/usePatientDetailData";
 import { usePatientStore } from "@/store/patientStore";
-import type {
-  Appointment,
-  MedicalRecord,
-  MedicalRecordDetail,
-  Patient,
-  Transcription,
-  Vitals,
-} from "@/types";
+import type { Appointment, MedicalRecord, MedicalRecordDetail, Transcription, Vitals } from "@/types";
+import styles from "../../theme-dashboard.module.css";
+
+const EMPTY_VITALS: Vitals[] = [];
+const EMPTY_APPOINTMENTS: Appointment[] = [];
+const EMPTY_RECORDS: MedicalRecord[] = [];
+const EMPTY_TRANSCRIPTIONS: Transcription[] = [];
 
 function statusBadgeVariant(s: string): "default" | "secondary" | "destructive" | "outline" {
   if (s === "completed") return "default";
@@ -46,47 +46,20 @@ export default function PatientDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params?.id ?? "";
-
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [vitals, setVitals] = useState<Vitals[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [records, setRecords] = useState<MedicalRecord[]>([]);
-  const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { detailQuery, addVitalsMutation, fetchRecordDetail } = usePatientDetailData(id);
+  const patient = detailQuery.data?.patient ?? null;
+  const vitals = detailQuery.data?.vitals ?? EMPTY_VITALS;
+  const appointments = detailQuery.data?.appointments ?? EMPTY_APPOINTMENTS;
+  const records = detailQuery.data?.records ?? EMPTY_RECORDS;
+  const transcriptions = detailQuery.data?.transcriptions ?? EMPTY_TRANSCRIPTIONS;
+  const loading = detailQuery.isLoading;
+  const loadError = detailQuery.isError
+    ? getApiErrorMessage(detailQuery.error, "Patient could not be loaded, or you do not have access.")
+    : null;
   const [vitalsOpen, setVitalsOpen] = useState(false);
   const [recordDetail, setRecordDetail] = useState<Record<string, MedicalRecordDetail | "loading">>({});
   const [openRecordId, setOpenRecordId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-
-  const reloadAll = useCallback(async () => {
-    if (!id) return;
-    setLoadError(null);
-    setLoading(true);
-    try {
-      const [p, v, a, r, t] = await Promise.all([
-        api.get<Patient>(`/patients/${id}`),
-        api.get<Vitals[]>(`/patients/${id}/vitals`),
-        api.get<Appointment[]>("/appointments", { params: { patient_id: id } }),
-        api.get<MedicalRecord[]>("/records", { params: { patient_id: id } }),
-        api.get<Transcription[]>(`/patients/${id}/transcriptions`),
-      ]);
-      setPatient(p.data);
-      setVitals(v.data);
-      setAppointments(a.data);
-      setRecords(r.data);
-      setTranscriptions(t.data);
-    } catch {
-      setPatient(null);
-      setLoadError("Patient could not be loaded, or you do not have access.");
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    void reloadAll();
-  }, [reloadAll]);
 
   useEffect(() => {
     const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
@@ -108,7 +81,7 @@ export default function PatientDetailPage() {
   const loadRecordDetail = useCallback(async (recordId: string) => {
     setRecordDetail((prev) => ({ ...prev, [recordId]: "loading" }));
     try {
-      const { data } = await api.get<MedicalRecordDetail>(`/records/${recordId}`);
+      const data = await fetchRecordDetail(recordId);
       setRecordDetail((prev) => ({ ...prev, [recordId]: data }));
     } catch {
       setRecordDetail((prev) => {
@@ -117,7 +90,7 @@ export default function PatientDetailPage() {
         return next;
       });
     }
-  }, []);
+  }, [fetchRecordDetail]);
 
   const latestVitals = useMemo(() => {
     if (!vitals.length) return null;
@@ -135,93 +108,156 @@ export default function PatientDetailPage() {
       }));
   }, [vitals]);
 
+  const nextAppointment = useMemo(() => {
+    return [...appointments]
+      .filter((appointment) => appointment.status === "scheduled")
+      .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())[0] ?? null;
+  }, [appointments]);
+
+  const latestTranscription = useMemo(() => {
+    return [...transcriptions].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] ?? null;
+  }, [transcriptions]);
+
   async function handleAddVitals(body: Record<string, unknown>) {
-    await api.post(`/patients/${id}/vitals`, body);
-    const { data } = await api.get<Vitals[]>(`/patients/${id}/vitals`);
-    setVitals(data);
+    await addVitalsMutation.mutateAsync(body);
   }
 
   if (loading && !patient) {
     return (
-      <div className="mx-auto max-w-5xl space-y-6">
-        <Skeleton className="h-8 w-40" />
-        <div className="flex flex-wrap gap-3">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-8 w-24" />
-        </div>
-        <Skeleton className="h-12 w-full max-w-xl" />
-        <Skeleton className="h-[360px] w-full rounded-lg" />
-      </div>
+      <>
+        <main className={styles.main}>
+          <div className={styles.contentColumn}>
+            <Skeleton className="h-10 w-52 rounded-md" />
+            <div className={styles.statRow}>
+              <Skeleton className="h-28 w-full rounded-2xl" />
+              <Skeleton className="h-28 w-full rounded-2xl" />
+              <Skeleton className="h-28 w-full rounded-2xl" />
+            </div>
+            <Skeleton className="h-[420px] w-full rounded-2xl" />
+          </div>
+        </main>
+        <aside className={styles.rightPanel}>
+          <Skeleton className="h-32 w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+        </aside>
+      </>
     );
   }
 
   if (!patient) {
     return (
-      <div className="mx-auto max-w-lg space-y-4">
-        <Button variant="ghost" size="sm" asChild className="gap-2 px-0">
-          <Link href="/dashboard/patients">
-            <ArrowLeft className="h-4 w-4" />
-            Back to patients
+      <>
+        <main className={styles.main}>
+          <div className={styles.contentColumn}>
+            <div className={styles.heroRow}>
+              <div>
+                <h1 className={styles.heroTitle}>Patient profile</h1>
+                <p className={styles.heroSubtitle}>{loadError ?? "This patient does not exist or is not visible for your role."}</p>
+              </div>
+            </div>
+            <article className={styles.dataCard}>
+              <Button variant="ghost" size="sm" asChild className="mb-4 gap-2 px-0">
+                <Link href="/dashboard/patients">
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to patients
+                </Link>
+              </Button>
+              <p className="text-sm text-slate-600">Review the patient list and pick another chart to continue.</p>
+              <Button className="mt-4 gap-2 rounded-full bg-[#1a1d21] px-5 text-white hover:bg-[#2a3040]" onClick={() => router.push("/dashboard/patients")}>
+                Go to directory
+              </Button>
+            </article>
+          </div>
+        </main>
+        <aside className={styles.rightPanel}>
+          <header className={styles.panelHeader}>
+            <h3 className={styles.panelTitle}>Chart status</h3>
+            <span className={styles.smallBtn}>⚠</span>
+          </header>
+          <div className={styles.reminderCard}>
+            <span className={styles.reminderIcon}>🧾</span>
+            <p className={styles.reminderText}>Check the patient identifier or return to the registry to open another profile.</p>
+          </div>
+          <Link href="/dashboard/patients" className={styles.makeConfBtn}>
+            + Open patient registry
           </Link>
-        </Button>
-        <Card>
-          <CardHeader>
-            <CardTitle>Patient not found</CardTitle>
-            <CardDescription>{loadError ?? "This patient does not exist or is not visible for your role."}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => router.push("/dashboard/patients")}>Go to directory</Button>
-          </CardContent>
-        </Card>
-      </div>
+        </aside>
+      </>
     );
   }
 
   const age = calculateAge(patient.date_of_birth);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-2">
-          <Button variant="ghost" size="sm" asChild className="gap-2 px-0 text-muted-foreground hover:text-foreground">
-            <Link href="/dashboard/patients">
-              <ArrowLeft className="h-4 w-4" />
-              Back to patients
-            </Link>
-          </Button>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">{patient.full_name}</h1>
-            <Badge variant="secondary" className="font-mono text-xs">
-              {patient.mrn}
-            </Badge>
-            {patient.blood_group && (
-              <Badge variant="outline" className="text-xs">
-                {patient.blood_group}
-              </Badge>
-            )}
+    <>
+      <main className={styles.main}>
+        <div className={styles.heroRow}>
+          <div>
+            <Button variant="ghost" size="sm" asChild className="mb-2 gap-2 px-0 text-muted-foreground hover:text-foreground">
+              <Link href="/dashboard/patients">
+                <ArrowLeft className="h-4 w-4" />
+                Back to patients
+              </Link>
+            </Button>
+            <h1 className={styles.heroTitle}>{patient.full_name}</h1>
+            <p className={styles.heroSubtitle}>
+              MRN {patient.mrn} · {age} yrs · {patient.gender || "Gender not set"}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {age} yrs · {patient.gender || "Gender not set"}
-          </p>
+          <button
+            type="button"
+            className="rounded-full bg-[#f05c3a] px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            onClick={() => setVitalsOpen(true)}
+          >
+            <span className="inline-flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Record vitals
+            </span>
+          </button>
         </div>
-        <Button className="gap-2 bg-primary text-primary-foreground" onClick={() => setVitalsOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Record vitals
-        </Button>
-      </div>
 
-      <VitalsForm patientId={id} open={vitalsOpen} onOpenChange={setVitalsOpen} onSubmit={handleAddVitals} />
+        <div className={styles.statRow}>
+          <div className={styles.summaryCard}>
+            <p className={styles.summaryLabel}>Blood group</p>
+            <p className={styles.summaryValue}>{patient.blood_group || "—"}</p>
+            <p className={styles.summarySub}>Primary identifier and blood matching reference.</p>
+          </div>
+          <div className={styles.summaryCard}>
+            <p className={styles.summaryLabel}>Appointments</p>
+            <p className={styles.summaryValue}>{appointments.length}</p>
+            <p className={styles.summarySub}>{nextAppointment ? `Next: ${formatDate(nextAppointment.scheduled_at)}` : "No scheduled visit yet."}</p>
+          </div>
+          <div className={styles.summaryCard}>
+            <p className={styles.summaryLabel}>Records on file</p>
+            <p className={styles.summaryValue}>{records.length}</p>
+            <p className={styles.summarySub}>{latestVitals ? `Latest vitals: ${formatDate(latestVitals.recorded_at)}` : "No vitals recorded yet."}</p>
+          </div>
+        </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="flex w-full flex-wrap justify-start gap-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="records">Medical records</TabsTrigger>
-          <TabsTrigger value="vitals">Vitals</TabsTrigger>
-          <TabsTrigger value="appointments">Appointments</TabsTrigger>
-          <TabsTrigger value="transcriptions">Transcriptions</TabsTrigger>
-        </TabsList>
+        <VitalsForm patientId={id} open={vitalsOpen} onOpenChange={setVitalsOpen} onSubmit={handleAddVitals} />
 
-        <TabsContent value="overview" className="mt-4 space-y-4">
+        <div className={styles.contentColumn}>
+          <article className={styles.dataCard}>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="mb-4 flex w-full flex-wrap justify-start gap-2 rounded-none bg-transparent p-0">
+                <TabsTrigger className="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-700 data-[state=active]:border-[#1a1d21] data-[state=active]:bg-[#1a1d21] data-[state=active]:text-white" value="overview">
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger className="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-700 data-[state=active]:border-[#1a1d21] data-[state=active]:bg-[#1a1d21] data-[state=active]:text-white" value="records">
+                  Medical records
+                </TabsTrigger>
+                <TabsTrigger className="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-700 data-[state=active]:border-[#1a1d21] data-[state=active]:bg-[#1a1d21] data-[state=active]:text-white" value="vitals">
+                  Vitals
+                </TabsTrigger>
+                <TabsTrigger className="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-700 data-[state=active]:border-[#1a1d21] data-[state=active]:bg-[#1a1d21] data-[state=active]:text-white" value="appointments">
+                  Appointments
+                </TabsTrigger>
+                <TabsTrigger className="rounded-full border border-slate-300 bg-white px-4 py-2 text-slate-700 data-[state=active]:border-[#1a1d21] data-[state=active]:bg-[#1a1d21] data-[state=active]:text-white" value="transcriptions">
+                  Transcriptions
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
@@ -298,9 +334,9 @@ export default function PatientDetailPage() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
+              </TabsContent>
 
-        <TabsContent value="records" className="mt-4 space-y-3">
+              <TabsContent value="records" className="mt-4 space-y-3">
           {records.length === 0 ? (
             <p className="text-sm text-muted-foreground">No medical records for this patient yet.</p>
           ) : (
@@ -360,9 +396,9 @@ export default function PatientDetailPage() {
               );
             })
           )}
-        </TabsContent>
+              </TabsContent>
 
-        <TabsContent value="vitals" className="mt-4 space-y-4">
+              <TabsContent value="vitals" className="mt-4 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Trends</CardTitle>
@@ -435,9 +471,9 @@ export default function PatientDetailPage() {
               </Table>
             </CardContent>
           </Card>
-        </TabsContent>
+              </TabsContent>
 
-        <TabsContent value="appointments" className="mt-4">
+              <TabsContent value="appointments" className="mt-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Appointments</CardTitle>
@@ -478,9 +514,9 @@ export default function PatientDetailPage() {
               </Table>
             </CardContent>
           </Card>
-        </TabsContent>
+              </TabsContent>
 
-        <TabsContent value="transcriptions" className="mt-4 space-y-3">
+              <TabsContent value="transcriptions" className="mt-4 space-y-3">
           {transcriptions.length === 0 ? (
             <p className="text-sm text-muted-foreground">No AI transcriptions linked to this patient yet.</p>
           ) : (
@@ -504,8 +540,73 @@ export default function PatientDetailPage() {
               </Card>
             ))
           )}
-        </TabsContent>
-      </Tabs>
-    </div>
+              </TabsContent>
+            </Tabs>
+          </article>
+        </div>
+      </main>
+
+      <aside className={styles.rightPanel}>
+        <header className={styles.panelHeader}>
+          <h3 className={styles.panelTitle}>Patient Snapshot</h3>
+          <span className={styles.smallBtn}>🧾</span>
+        </header>
+
+        <div className={styles.summaryCard}>
+          <p className={styles.summaryLabel}>Contact</p>
+          <p className={styles.summaryValue} style={{ fontSize: "18px" }}>{patient.phone || "Not set"}</p>
+          <p className={styles.summarySub}>{patient.address || "No address on file."}</p>
+        </div>
+
+        <div className={styles.reminderCard}>
+          <span className={styles.reminderIcon}>✓</span>
+          <p className={styles.reminderText}>
+            {nextAppointment
+              ? `Next visit is ${formatDate(nextAppointment.scheduled_at)}. Confirm complaints and latest vitals before the appointment.`
+              : "No scheduled appointment yet. Create one from the appointments board when needed."}
+          </p>
+        </div>
+
+        <div className={styles.conferenceList}>
+          <Link href={`/dashboard/records/${patient.id}`} className={styles.confItem}>
+            <div>
+              <span className={styles.confDate}>Chart</span>
+              <span className={styles.confHour}>REC</span>
+            </div>
+            <div>
+              <p className={styles.confName}>Open records history</p>
+              <p className={styles.confDoctor}>Review past diagnoses and prescriptions.</p>
+            </div>
+            <span className={styles.confArrow}>↗</span>
+          </Link>
+          <Link href={`/dashboard/appointments${nextAppointment ? `/${nextAppointment.id}` : ""}`} className={styles.confItem}>
+            <div>
+              <span className={styles.confDate}>Visit</span>
+              <span className={styles.confHour}>{nextAppointment ? "APT" : "NEW"}</span>
+            </div>
+            <div>
+              <p className={styles.confName}>{nextAppointment ? "Open next appointment" : "Schedule appointment"}</p>
+              <p className={styles.confDoctor}>{nextAppointment ? "Jump to the linked appointment detail." : "Create a new visit from the schedule board."}</p>
+            </div>
+            <span className={styles.confArrow}>↗</span>
+          </Link>
+          <div className={styles.confItem}>
+            <div>
+              <span className={styles.confDate}>AI</span>
+              <span className={styles.confHour}>{latestTranscription ? "ON" : "--"}</span>
+            </div>
+            <div>
+              <p className={styles.confName}>Latest transcription</p>
+              <p className={styles.confDoctor}>{latestTranscription ? formatDate(latestTranscription.created_at) : "No transcription linked yet."}</p>
+            </div>
+            <span className={styles.confArrow}>•</span>
+          </div>
+        </div>
+
+        <Link href="/dashboard/patients" className={styles.makeConfBtn}>
+          + Browse all patients
+        </Link>
+      </aside>
+    </>
   );
 }

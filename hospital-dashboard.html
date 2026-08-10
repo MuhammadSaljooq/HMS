@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSST Klaten - Hospital Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #e8ecef;
+    --surface: #f2f4f6;
+    --card: #ffffff;
+    --card-inner: #f7f8fa;
+    --border: rgba(0,0,0,0.07);
+    --text-primary: #1a1d21;
+    --text-secondary: #7a8190;
+    --text-muted: #adb5bd;
+    --accent-teal: #6bbfcc;
+    --accent-teal-bg: #dff0f4;
+    --accent-red: #f05c3a;
+    --accent-orange: #f5a623;
+    --nav-active: #1a1d21;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --radius-xl: 28px;
+    --font: 'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* TOP NAV */
+  .topnav {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 14px 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 20px;
+  }
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+  .nav-link {
+    padding: 8px 18px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-link:hover { color: var(--text-primary); }
+  .nav-link.active {
+    background: var(--nav-active);
+    color: #fff;
+    font-weight: 600;
+  }
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+  }
+  .icon-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .icon-btn:hover { background: var(--card-inner); }
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .user-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f0c3a0, #e8956a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    overflow: hidden;
+  }
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .user-text { text-align: right; }
+  .user-role { font-size: 11px; color: var(--text-muted); line-height: 1; }
+  .user-name { font-size: 13px; font-weight: 600; line-height: 1.4; }
+
+  /* LAYOUT */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 64px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 8px;
+    position: sticky;
+    top: 67px;
+    height: calc(100vh - 67px);
+  }
+  .sidebar-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    font-size: 16px;
+  }
+  .sidebar-btn:hover { background: var(--accent-teal-bg); color: var(--accent-teal); }
+  .sidebar-spacer { flex: 1; }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  /* STAT CARDS ROW */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    border: 1px solid var(--border);
+  }
+  .stat-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .stat-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .stat-arrow-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--accent-teal-bg);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--accent-teal);
+    font-size: 16px;
+    transition: all 0.2s;
+    border: none;
+    flex-shrink: 0;
+  }
+  .stat-arrow-btn:hover { background: var(--accent-teal); color: #fff; }
+  .stat-dropdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-bottom: 16px;
+  }
+  .stat-inner-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .stat-inner-card {
+    background: var(--card-inner);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid var(--border);
+  }
+  .stat-inner-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .stat-expand-btn {
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .stat-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .stat-icon {
+    font-size: 18px;
+    color: var(--text-secondary);
+  }
+
+  /* BOTTOM ROW */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 16px;
+  }
+
+  /* HEALTH TRENDS TABLE */
+  .health-card {
+    background: var(--card);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-action-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+  .table-head {
+    display: grid;
+    grid-template-columns: 1.5fr 1.2fr 0.8fr 0.8fr;
+    padding: 0 4px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-head span {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+  .table-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1.2fr 0.8fr 0.8fr;
+    padding: 12px 4px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    align-items: center;
+  }
+  .table-row:last-child { border-bottom: none; }
+  .table-cell {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .table-cell-num {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-infectious { background: #fde8e2; color: #e84c1e; }
+  .badge-noninfectious { background: #dff0f4; color: #3a9cb8; }
+
+  /* DOCTOR'S SCHEDULE */
+  .schedule-card {
+    background: var(--card);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+  }
+  .calendar-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .cal-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .cal-day-name {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .cal-day-num {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cal-day-num:hover { background: var(--card-inner); }
+  .cal-day-num.today { background: var(--accent-teal); color: #fff; }
+  .cal-day-num.weekend { background: var(--accent-red); color: #fff; }
+
+  .schedule-events {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .schedule-time-row {
+    display: grid;
+    grid-template-columns: 54px 1fr 54px 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .time-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+  }
+  .event-block {
+    background: var(--card-inner);
+    border-left: 3px solid var(--accent-teal);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .event-title { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+  .event-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .doctor-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card-inner);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+  }
+  .doctor-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c8e6ea, #8dc5cf);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .doctor-info { flex: 1; }
+  .doctor-role { font-size: 10px; color: var(--text-muted); }
+  .doctor-name { font-size: 13px; font-weight: 600; }
+  .doctor-avatars {
+    display: flex;
+  }
+  .mini-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    margin-left: -8px;
+    background: linear-gradient(135deg, #e0c8d0, #c8a0b0);
+    font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-weight: 600;
+  }
+  .mini-avatar:first-child { margin-left: 0; }
+  .mini-avatar:nth-child(2) { background: linear-gradient(135deg, #c8d8e0, #a0b8c8); }
+  .mini-avatar:nth-child(3) { background: linear-gradient(135deg, #d8c8e0, #b8a0c8); }
+  .mini-avatar:nth-child(4) { background: linear-gradient(135deg, #e0d8c8, #c8b8a0); }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    width: 290px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    position: sticky;
+    top: 67px;
+    height: calc(100vh - 67px);
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .panel-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .panel-search-btn {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  /* REMINDER CARD */
+  .reminder-card {
+    background: var(--card);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+  }
+  .reminder-icon {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #fef3cd;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .reminder-text {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+  .remind-btn {
+    background: var(--nav-active);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: var(--font);
+    transition: opacity 0.2s;
+  }
+  .remind-btn:hover { opacity: 0.85; }
+
+  /* CONFERENCE ITEMS */
+  .conf-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .conf-item:last-child { border-bottom: none; }
+  .conf-item:hover { opacity: 0.75; }
+  .conf-time {
+    min-width: 72px;
+  }
+  .conf-date { font-size: 11px; color: var(--text-muted); }
+  .conf-hour { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+  .conf-info { flex: 1; }
+  .conf-name { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+  .conf-avatars {
+    display: flex;
+    margin-top: 6px;
+  }
+  .conf-avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    margin-left: -5px;
+    font-size: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-weight: 600;
+  }
+  .conf-avatar:first-child { margin-left: 0; }
+  .conf-arrow {
+    color: var(--text-muted);
+    font-size: 14px;
+    align-self: center;
+  }
+
+  /* MAKE CONFERENCE BTN */
+  .make-conf-btn {
+    width: 100%;
+    background: var(--accent-red);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: var(--font);
+    transition: opacity 0.2s;
+    margin-top: auto;
+  }
+  .make-conf-btn:hover { opacity: 0.9; }
+
+  .panel-caption {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 10px; }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .stat-card { animation: fadeUp 0.4s ease both; }
+  .stat-card:nth-child(1) { animation-delay: 0.05s; }
+  .stat-card:nth-child(2) { animation-delay: 0.1s; }
+  .stat-card:nth-child(3) { animation-delay: 0.15s; }
+  .health-card, .schedule-card { animation: fadeUp 0.4s ease 0.2s both; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="logo">
+    <svg class="logo-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="13" cy="13" r="9" fill="#4CAF50" opacity="0.85"/>
+      <circle cx="23" cy="13" r="9" fill="#2196F3" opacity="0.85"/>
+      <circle cx="18" cy="23" r="9" fill="#FF5722" opacity="0.85"/>
+    </svg>
+  </div>
+  <div class="nav-links">
+    <div class="nav-link active">Dashboard</div>
+    <div class="nav-link">Patient</div>
+    <div class="nav-link">Doctors and Staff</div>
+    <div class="nav-link">Room</div>
+    <div class="nav-link">Medicine</div>
+    <div class="nav-link">Analitik</div>
+    <div class="nav-link">Inventory</div>
+  </div>
+  <div class="nav-right">
+    <div class="icon-btn">✉</div>
+    <div class="icon-btn">🔔</div>
+    <div class="user-info">
+      <div class="user-text">
+        <div class="user-role">Admin</div>
+        <div class="user-name">Karlina Safir</div>
+      </div>
+      <div class="user-avatar">👩‍⚕️</div>
+    </div>
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-btn">‹</div>
+    <div class="sidebar-btn">⇄</div>
+    <div class="sidebar-btn">↓</div>
+    <div class="sidebar-btn">☆</div>
+    <div class="sidebar-btn">+</div>
+    <div class="sidebar-btn">🗄</div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-btn">📊</div>
+    <div class="sidebar-btn">ℹ</div>
+    <div style="height:20px"></div>
+    <div class="sidebar-btn">🔊</div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- Statistical Summary -->
+    <div>
+      <div class="section-title">Statistical Summary</div>
+    </div>
+
+    <div class="stat-row">
+      <!-- Number of Patients -->
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-title">Number of patients</div>
+          <button class="stat-arrow-btn">↗</button>
+        </div>
+        <div class="stat-dropdown">Week <span>▾</span></div>
+        <div class="stat-inner-row">
+          <div class="stat-inner-card">
+            <div class="stat-inner-label">Adult Patients <span class="stat-expand-btn">⛶</span></div>
+            <div class="stat-value"><span class="stat-icon">👤</span> 547</div>
+          </div>
+          <div class="stat-inner-card">
+            <div class="stat-inner-label">Kids Patients <span class="stat-expand-btn">⛶</span></div>
+            <div class="stat-value"><span class="stat-icon">🧒</span> 372</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Visit -->
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-title">Daily Visit</div>
+          <button class="stat-arrow-btn">↗</button>
+        </div>
+        <div class="stat-dropdown">Week <span>▾</span></div>
+        <div class="stat-inner-row">
+          <div class="stat-inner-card">
+            <div class="stat-inner-label">Emergency Room <span class="stat-expand-btn">⛶</span></div>
+            <div class="stat-value"><span class="stat-icon">🚨</span> 78</div>
+          </div>
+          <div class="stat-inner-card">
+            <div class="stat-inner-label">Polyclinic <span class="stat-expand-btn">⛶</span></div>
+            <div class="stat-value"><span class="stat-icon">🏥</span> 243</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Room Capacity -->
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-card-title">Room Capacity</div>
+          <button class="stat-arrow-btn">↗</button>
+        </div>
+        <div class="stat-dropdown">Cendana <span>▾</span></div>
+        <div class="stat-inner-row">
+          <div class="stat-inner-card">
+            <div class="stat-inner-label">Bed Available <span class="stat-expand-btn">⛶</span></div>
+            <div class="stat-value"><span class="stat-icon">🛏</span> 12</div>
+          </div>
+          <div class="stat-inner-card">
+            <div class="stat-inner-label">Occupied Bed <span class="stat-expand-btn">⛶</span></div>
+            <div class="stat-value"><span class="stat-icon">🛏</span> 188</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom row: Health Trends + Schedule -->
+    <div class="bottom-row">
+
+      <!-- Health Trends -->
+      <div class="health-card">
+        <div class="card-header">
+          <div class="card-title">Health Trends</div>
+          <div class="card-actions">
+            <div class="card-action-btn">🔍</div>
+            <div class="stat-dropdown" style="margin:0">Des 24 <span>▾</span></div>
+          </div>
+        </div>
+        <div class="table-head">
+          <span>Disease</span>
+          <span>Characteristic</span>
+          <span>Patients</span>
+          <span>Recovers</span>
+        </div>
+        <div class="table-row">
+          <div class="table-cell">Covid 19</div>
+          <div><span class="badge badge-infectious">Infectious</span></div>
+          <div class="table-cell-num">698</div>
+          <div class="table-cell-num">325</div>
+        </div>
+        <div class="table-row">
+          <div class="table-cell">Heart Disease</div>
+          <div><span class="badge badge-noninfectious">Non Infectious</span></div>
+          <div class="table-cell-num">154</div>
+          <div class="table-cell-num">82</div>
+        </div>
+        <div class="table-row">
+          <div class="table-cell">Diabetes</div>
+          <div><span class="badge badge-noninfectious">Non Infectious</span></div>
+          <div class="table-cell-num">229</div>
+          <div class="table-cell-num">23</div>
+        </div>
+        <div class="table-row">
+          <div class="table-cell">TBC</div>
+          <div><span class="badge badge-infectious">Infectious</span></div>
+          <div class="table-cell-num">58</div>
+          <div class="table-cell-num">53</div>
+        </div>
+        <div class="table-row">
+          <div class="table-cell">Dengue Fever</div>
+          <div><span class="badge badge-noninfectious">Non Infectious</span></div>
+          <div class="table-cell-num">563</div>
+          <div class="table-cell-num">543</div>
+        </div>
+      </div>
+
+      <!-- Doctor's Schedule -->
+      <div class="schedule-card">
+        <div class="card-header">
+          <div class="card-title">Doctor's Schedule</div>
+          <div class="card-actions">
+            <div class="card-action-btn">🔍</div>
+            <div class="stat-dropdown" style="margin:0">Des 24 <span>▾</span></div>
+          </div>
+        </div>
+
+        <div class="calendar-week">
+          <div class="cal-day"><div class="cal-day-name">Mon</div><div class="cal-day-num">7</div></div>
+          <div class="cal-day"><div class="cal-day-name">Tue</div><div class="cal-day-num">8</div></div>
+          <div class="cal-day"><div class="cal-day-name">Wed</div><div class="cal-day-num today">9</div></div>
+          <div class="cal-day"><div class="cal-day-name">Thu</div><div class="cal-day-num">10</div></div>
+          <div class="cal-day"><div class="cal-day-name">Fri</div><div class="cal-day-num">11</div></div>
+          <div class="cal-day"><div class="cal-day-name">Sat</div><div class="cal-day-num weekend">12</div></div>
+          <div class="cal-day"><div class="cal-day-name">Sun</div><div class="cal-day-num weekend">13</div></div>
+        </div>
+
+        <div class="schedule-events">
+          <div class="schedule-time-row">
+            <div class="time-label">08:00</div>
+            <div class="event-block">
+              <div class="event-title">Patient Visit</div>
+              <div class="event-sub">Patient visit schedule in dahlia room</div>
+            </div>
+            <div class="time-label">10:00</div>
+            <div class="event-block" style="border-left-color:#f5a623">
+              <div class="event-title">Patient Visit</div>
+              <div class="event-sub">Schedule in rose room</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="doctor-footer">
+          <div class="doctor-avatar">👩‍⚕️</div>
+          <div class="doctor-info">
+            <div class="doctor-role">Pediatrician</div>
+            <div class="doctor-name">Dr. Karlina S</div>
+          </div>
+          <div class="doctor-avatars">
+            <div class="mini-avatar">A</div>
+            <div class="mini-avatar">B</div>
+            <div class="mini-avatar">C</div>
+            <div class="mini-avatar">D</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="right-panel">
+    <div class="panel-header">
+      <div class="panel-title">Doctor's Conference</div>
+      <div class="panel-search-btn">🔍</div>
+    </div>
+
+    <!-- Reminder -->
+    <div class="reminder-card">
+      <div class="reminder-icon">⚠️</div>
+      <div class="reminder-text">Bypass surgery meeting to start soon. remind doctor</div>
+      <button class="remind-btn">Remind</button>
+    </div>
+
+    <!-- Conference items -->
+    <div class="conf-item">
+      <div class="conf-time">
+        <div class="conf-date">Tue, 15 Jan</div>
+        <div class="conf-hour">09:00 am</div>
+      </div>
+      <div class="conf-info">
+        <div class="conf-name">Heart bypass surgery conference</div>
+        <div class="conf-avatars">
+          <div class="conf-avatar" style="background:#c8d8e0">👩‍⚕️</div>
+          <div class="conf-avatar" style="background:#d8c8e0">👨‍⚕️</div>
+          <div class="conf-avatar" style="background:#e0d8c8">👩‍⚕️</div>
+          <div class="conf-avatar" style="background:#c8e0d8">👨‍⚕️</div>
+        </div>
+      </div>
+      <div class="conf-arrow">↗</div>
+    </div>
+
+    <div class="conf-item">
+      <div class="conf-time">
+        <div class="conf-date">Tue, 15 Jan</div>
+        <div class="conf-hour">16:00 pm</div>
+      </div>
+      <div class="conf-info">
+        <div class="conf-name">Conference to respond to rising covid 19 cases</div>
+        <div class="conf-avatars">
+          <div class="conf-avatar" style="background:#c8e6ea">👩‍⚕️</div>
+          <div class="conf-avatar" style="background:#e6c8ea">👨‍⚕️</div>
+        </div>
+      </div>
+      <div class="conf-arrow">↗</div>
+    </div>
+
+    <div class="conf-item">
+      <div class="conf-time">
+        <div class="conf-date">Wed, 16 Jan</div>
+        <div class="conf-hour">10:00 am</div>
+      </div>
+      <div class="conf-info">
+        <div class="conf-name">Spinal surgery of patient named fulan</div>
+        <div class="conf-avatars">
+          <div class="conf-avatar" style="background:#c8e0c8">👩‍⚕️</div>
+          <div class="conf-avatar" style="background:#e0c8c8">👨‍⚕️</div>
+          <div class="conf-avatar" style="background:#c8c8e0">👩‍⚕️</div>
+        </div>
+      </div>
+      <div class="conf-arrow">↗</div>
+    </div>
+
+    <div class="conf-item">
+      <div class="conf-time">
+        <div class="conf-date">Wed, 16 Jan</div>
+        <div class="conf-hour">13:00 pm</div>
+      </div>
+      <div class="conf-info">
+        <div class="conf-name">Heart bypass surgery conference</div>
+        <div class="conf-avatars">
+          <div class="conf-avatar" style="background:#e0c8e0">👩‍⚕️</div>
+          <div class="conf-avatar" style="background:#c8e0e0">👨‍⚕️</div>
+          <div class="conf-avatar" style="background:#e0e0c8">👩‍⚕️</div>
+        </div>
+      </div>
+      <div class="conf-arrow">↗</div>
+    </div>
+
+    <button class="make-conf-btn">+ Make Conference</button>
+    <div class="panel-caption">Create conference, schedule date as a reminder</div>
+  </aside>
+
+</div>
+
+</body>
+</html>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { calculateAge, formatDate } from "@/lib/patient-utils";
+import { cn } from "@/lib/utils";
 import type { Patient } from "@/types";
 
 export type PatientSortKey =
@@ -38,6 +39,23 @@ type PatientTableProps = {
   sortDir: SortDir;
   onSortChange: (key: PatientSortKey) => void;
   onPageChange: (page: number) => void;
+  showCreateButton?: boolean;
+  classNames?: {
+    root?: string;
+    toolbar?: string;
+    searchWrap?: string;
+    searchInput?: string;
+    createButton?: string;
+    tableShell?: string;
+    sortButton?: string;
+    row?: string;
+    emptyCell?: string;
+    footer?: string;
+    footerMeta?: string;
+    pagerWrap?: string;
+    pagerButton?: string;
+    loadingPulse?: string;
+  };
 };
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
@@ -61,6 +79,8 @@ export function PatientTable({
   sortDir,
   onSortChange,
   onPageChange,
+  showCreateButton = true,
+  classNames,
 }: PatientTableProps) {
   const router = useRouter();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -71,7 +91,7 @@ export function PatientTable({
     <TableHead className={className}>
       <button
         type="button"
-        className="inline-flex items-center font-medium hover:text-primary"
+        className={cn("inline-flex items-center font-medium hover:text-primary", classNames?.sortButton)}
         onClick={() => onSortChange(key)}
       >
         {label}
@@ -81,23 +101,25 @@ export function PatientTable({
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-md flex-1">
+    <div className={cn("space-y-4", classNames?.root)}>
+      <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between", classNames?.toolbar)}>
+        <div className={cn("relative max-w-md flex-1", classNames?.searchWrap)}>
           <Input
             placeholder="Search by name, MRN, or phone…"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pr-3"
+            className={cn("pr-3", classNames?.searchInput)}
             aria-label="Search patients"
           />
         </div>
-        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0">
-          <Link href="/dashboard/patients/new">Register new patient</Link>
-        </Button>
+        {showCreateButton ? (
+          <Button asChild className={cn("bg-primary text-primary-foreground hover:bg-primary/90 shrink-0", classNames?.createButton)}>
+            <Link href="/dashboard/patients/new">Register new patient</Link>
+          </Button>
+        ) : null}
       </div>
 
-      <div className="rounded-md border border-border bg-card">
+      <div className={cn("rounded-md border border-border bg-card", classNames?.tableShell)}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -117,14 +139,14 @@ export function PatientTable({
                 <TableRow key={i}>
                   {Array.from({ length: 8 }).map((__, j) => (
                     <TableCell key={j}>
-                      <div className="h-4 animate-pulse rounded bg-muted" />
+                      <div className={cn("h-4 animate-pulse rounded bg-muted", classNames?.loadingPulse)} />
                     </TableCell>
                   ))}
                 </TableRow>
               ))}
             {!loading && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={8} className={cn("h-24 text-center text-muted-foreground", classNames?.emptyCell)}>
                   No patients match your search.
                 </TableCell>
               </TableRow>
@@ -133,7 +155,7 @@ export function PatientTable({
               rows.map((p) => (
                 <TableRow
                   key={p.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className={cn("cursor-pointer hover:bg-muted/50", classNames?.row)}
                   role="button"
                   tabIndex={0}
                   onClick={() => router.push(`/dashboard/patients/${p.id}`)}
@@ -166,8 +188,8 @@ export function PatientTable({
         </Table>
       </div>
 
-      <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <p>
+      <div className={cn("flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between", classNames?.footer)}>
+        <p className={classNames?.footerMeta}>
           {total === 0 ? (
             "No results"
           ) : (
@@ -178,11 +200,12 @@ export function PatientTable({
             </>
           )}
         </p>
-        <div className="flex items-center gap-2">
+        <div className={cn("flex items-center gap-2", classNames?.pagerWrap)}>
           <Button
             type="button"
             variant="outline"
             size="sm"
+            className={classNames?.pagerButton}
             disabled={page <= 0 || loading}
             onClick={() => onPageChange(page - 1)}
           >
@@ -195,6 +218,7 @@ export function PatientTable({
             type="button"
             variant="outline"
             size="sm"
+            className={classNames?.pagerButton}
             disabled={page >= totalPages - 1 || loading}
             onClick={() => onPageChange(page + 1)}
           >

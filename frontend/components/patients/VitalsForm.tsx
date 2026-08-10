@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { getApiErrorMessage } from "@/lib/api-errors";
 
 export type VitalsFormFields = {
   blood_pressure_systolic: string;
@@ -92,7 +93,13 @@ export function VitalsForm({ patientId, open, onOpenChange, onSubmit }: VitalsFo
       return form.setError("root", { message: "Enter at least one vital sign." });
     }
 
-    await onSubmit(body);
+    try {
+      await onSubmit(body);
+    } catch (e: unknown) {
+      // Keep the sheet open so the entered values are not lost, and show why the save failed.
+      form.setError("root", { message: getApiErrorMessage(e, "Could not save vitals.") });
+      return;
+    }
     form.reset();
     onOpenChange(false);
   }

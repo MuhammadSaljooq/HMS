@@ -22,16 +22,28 @@ import {
 } from "@/components/ui/select";
 import { usePatients } from "@/hooks/usePatients";
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import type { MedicalRecord, Patient } from "@/types";
 
 type AttachToRecordDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transcriptionId: string;
+  /** True once the transcription is approved (backend gate for linking). */
+  isApproved: boolean;
+  /** Approve the transcript; used by the "Approve & attach" convenience. */
+  onApprove: () => Promise<void>;
   onLinked: () => void;
 };
 
-export function AttachToRecordDialog({ open, onOpenChange, transcriptionId, onLinked }: AttachToRecordDialogProps) {
+export function AttachToRecordDialog({
+  open,
+  onOpenChange,
+  transcriptionId,
+  isApproved,
+  onApprove,
+  onLinked,
+}: AttachToRecordDialogProps) {
   const { list: searchPatients } = usePatients();
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Patient[]>([]);
@@ -108,12 +120,17 @@ export function AttachToRecordDialog({ open, onOpenChange, transcriptionId, onLi
     setSubmitting(true);
     setFormError(null);
     try {
+      // Backend requires status `approved` before linking. If not yet approved,
+      // approve first (the "Approve & attach" convenience), then link.
+      if (!isApproved) {
+        await onApprove();
+      }
       await api.patch(`/transcriptions/${transcriptionId}/link`, { medical_record_id: recordId });
       onLinked();
       onOpenChange(false);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Could not link transcription.";
-      setFormError(msg);
+      // Surface the 400 approval-gate (and any other error) gracefully.
+      setFormError(getApiErrorMessage(e, "Could not link transcription."));
     } finally {
       setSubmitting(false);
     }
@@ -180,6 +197,9 @@ export function AttachToRecordDialog({ open, onOpenChange, transcriptionId, onLi
               </Select>
             )}
           </div>
+          {!isApproved && (
+            <p className="text-xs text-muted-foreground">Approve the transcript before attaching.</p>
+          )}
           {formError && <p className="text-sm text-destructive">{formError}</p>}
         </div>
         <DialogFooter>
@@ -187,7 +207,13 @@ export function AttachToRecordDialog({ open, onOpenChange, transcriptionId, onLi
             Cancel
           </Button>
           <Button type="button" disabled={submitting || !recordId} onClick={() => void submit()}>
-            {submitting ? "Linking…" : "Link transcription"}
+            {submitting
+              ? isApproved
+                ? "Linking…"
+                : "Approving…"
+              : isApproved
+                ? "Link transcription"
+                : "Approve & attach"}
           </Button>
         </DialogFooter>
       </DialogContent>

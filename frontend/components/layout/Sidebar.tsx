@@ -2,46 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Activity,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  LayoutDashboard,
-  Mic,
-  Settings,
-  Users,
-} from "lucide-react";
+import { Activity, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { visibleDashboardNav } from "@/lib/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
-import type { UserRole } from "@/types";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  /** If set, only these roles (and admin) see the link. */
-  roles?: UserRole[];
-};
-
-const nav: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/patients", label: "Patients", icon: Users },
-  { href: "/dashboard/appointments", label: "Appointments", icon: CalendarDays },
-  { href: "/dashboard/transcriber", label: "Transcriber", icon: Mic, roles: ["doctor", "admin"] },
-  { href: "/dashboard/records", label: "Records", icon: ClipboardList },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin"] },
-];
-
-function canSeeNavItem(role: UserRole | null | undefined, item: NavItem): boolean {
-  if (!role) return false;
-  if (role === "admin") return true;
-  if (!item.roles) return true;
-  return item.roles.includes(role);
-}
 
 export function Sidebar({
   collapsed,
@@ -53,7 +19,7 @@ export function Sidebar({
   const pathname = usePathname();
   const role = useAuthStore((s) => s.user?.role);
 
-  const visible = nav.filter((item) => canSeeNavItem(role, item));
+  const visible = visibleDashboardNav(role);
 
   return (
     <aside
@@ -66,7 +32,7 @@ export function Sidebar({
         {!collapsed && (
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-primary truncate">
             <Activity className="h-6 w-6 shrink-0" />
-            <span className="truncate">Riverside HMS</span>
+            <span className="truncate">National Eye Care Hospital</span>
           </Link>
         )}
         {collapsed && (
