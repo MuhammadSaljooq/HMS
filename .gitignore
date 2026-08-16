@@ -23,3 +23,5 @@ frontend/.env.local
 # Local uploads / runtime artifacts
 backend/uploads/
 *.log
+
+.claude/settings.local.json
