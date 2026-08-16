@@ -3,10 +3,14 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { getDefaultDashboardPath } from "@/lib/rbac";
+import { useAuthStore } from "@/store/authStore";
 
 import styles from "../theme-dashboard.module.css";
 
 export default function ForbiddenPage() {
+  const role = useAuthStore((s) => s.user?.role);
+  const homePath = role ? getDefaultDashboardPath(role) : "/login";
   return (
     <>
       <main className={styles.main}>
@@ -27,7 +31,7 @@ export default function ForbiddenPage() {
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Button asChild className="rounded-full bg-[#1a1d21] px-5 text-white hover:bg-[#2a3040]">
-                <Link href="/dashboard">Return to dashboard</Link>
+                <Link href={homePath}>Go to your home</Link>
               </Button>
               <Button asChild variant="outline" className="rounded-full">
                 <Link href="/dashboard/patients">Open patients</Link>
@@ -46,8 +50,8 @@ export default function ForbiddenPage() {
           <span className={styles.reminderIcon}>⚠️</span>
           <p className={styles.reminderText}>If you need this page for your workflow, ask an admin to review your assigned role.</p>
         </div>
-        <Link href="/dashboard/settings" className={styles.makeConfBtn}>
-          + Review role settings
+        <Link href={homePath} className={styles.makeConfBtn}>
+          + Back to your home
         </Link>
       </aside>
     </>

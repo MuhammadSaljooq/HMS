@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, type ReactNode } from "react";
 
 import { visibleDashboardNav } from "@/lib/navigation";
 import { USER_ROLE_LABELS } from "@/lib/roles";
+import { useAuthStore } from "@/store/authStore";
 import type { User } from "@/types";
 
 type MockupThemeStyles = Readonly<Record<string, string>>;
@@ -27,7 +28,20 @@ export function MockupDashboardShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const visibleNav = visibleDashboardNav(user?.role);
+
+  async function handleLogout() {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await useAuthStore.getState().logout();
+      router.replace("/login");
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
   const topNavLabels = new Set<string>(visibleNav.map((item) => item.label));
   const showExtraActivePill = activeSection && !topNavLabels.has(activeSection);
 
@@ -91,15 +105,23 @@ export function MockupDashboardShell({
         </div>
 
         <div className={styles.navRight}>
-          <span className={styles.iconBtn}>✉</span>
-          <span className={styles.iconBtn}>🔔</span>
+          <span className={styles.iconBtn} aria-hidden="true">✉</span>
+          <span className={styles.iconBtn} aria-hidden="true">🔔</span>
           <div className={styles.userInfo}>
             <div className={styles.userText}>
               <span className={styles.userRole}>{user ? USER_ROLE_LABELS[user.role] : "Staff"}</span>
               <span className={styles.userName}>{user?.full_name ?? "Loading session"}</span>
             </div>
-            <span className={styles.userAvatar}>👩‍⚕️</span>
+            <span className={styles.userAvatar} aria-hidden="true">👩‍⚕️</span>
           </div>
+          <button
+            type="button"
+            className={styles.logoutBtn}
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? "Logging out…" : "Logout"}
+          </button>
         </div>
       </nav>
 

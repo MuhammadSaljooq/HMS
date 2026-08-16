@@ -192,7 +192,7 @@ export default function AppointmentsPage() {
             <div className={styles.dataCard}>
               <header className={styles.dataHeader}>
                 <h3 className={styles.dataTitle}>Schedule</h3>
-                <span className={styles.dropdown}>Local time ▾</span>
+                <span className={styles.dropdown}>Local time</span>
               </header>
               <p className={styles.heroSubtitle} style={{ marginTop: 0, marginBottom: 10 }}>
                 Times shown in your local timezone.
@@ -290,7 +290,7 @@ export default function AppointmentsPage() {
           </div>
 
           <div className={styles.summaryCard}>
-            <p className={styles.summaryLabel}>Status split</p>
+            <p className={styles.summaryLabel}>Status split (current filter)</p>
             <div className={styles.badgeRow}>
               <span className={styles.statBadge}>Sch {statusSummary.scheduled}</span>
               <span className={styles.statBadge}>Done {statusSummary.completed}</span>

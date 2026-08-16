@@ -53,6 +53,8 @@ export function AttachToRecordDialog({
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [recordsError, setRecordsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -62,6 +64,8 @@ export function AttachToRecordDialog({
       setRecords([]);
       setRecordId("");
       setFormError(null);
+      setSearchError(null);
+      setRecordsError(null);
     }
   }, [open]);
 
@@ -72,11 +76,13 @@ export function AttachToRecordDialog({
     }
     const t = setTimeout(() => {
       void (async () => {
+        setSearchError(null);
         try {
           const res = await searchPatients({ search: query.trim(), limit: 8, skip: 0 });
           setHits(res.items);
-        } catch {
+        } catch (e: unknown) {
           setHits([]);
+          setSearchError(getApiErrorMessage(e, "Could not search patients."));
         }
       })();
     }, 300);
@@ -92,16 +98,18 @@ export function AttachToRecordDialog({
     let cancelled = false;
     (async () => {
       setLoadingRecords(true);
+      setRecordsError(null);
       try {
         const { data } = await api.get<MedicalRecord[]>("/records", { params: { patient_id: patient.id } });
         if (!cancelled) {
           setRecords(data);
           setRecordId(data[0]?.id ?? "");
         }
-      } catch {
+      } catch (e: unknown) {
         if (!cancelled) {
           setRecords([]);
           setRecordId("");
+          setRecordsError(getApiErrorMessage(e, "Could not load records."));
         }
       } finally {
         if (!cancelled) setLoadingRecords(false);
@@ -167,6 +175,7 @@ export function AttachToRecordDialog({
                 ))}
               </ul>
             )}
+            {searchError && <p className="text-sm text-destructive">{searchError}</p>}
             {patient && (
               <p className="text-sm">
                 Selected: <span className="font-medium">{patient.full_name}</span>{" "}
@@ -179,7 +188,8 @@ export function AttachToRecordDialog({
           <div className="space-y-2">
             <Label>Medical record</Label>
             {loadingRecords && <p className="text-xs text-muted-foreground">Loading records…</p>}
-            {!loadingRecords && patient && records.length === 0 && (
+            {recordsError && <p className="text-sm text-destructive">{recordsError}</p>}
+            {!loadingRecords && !recordsError && patient && records.length === 0 && (
               <p className="text-xs text-muted-foreground">No records for this patient. Create one from the patient profile.</p>
             )}
             {records.length > 0 && (

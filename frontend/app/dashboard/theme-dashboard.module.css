@@ -120,6 +120,32 @@
   width: 33px;
 }
 
+.logoutBtn {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 6px;
+  justify-content: center;
+  padding: 7px 12px;
+  transition: all 0.2s;
+}
+
+.logoutBtn:hover:not(:disabled) {
+  background: var(--accent-teal-bg);
+  color: var(--accent-teal);
+}
+
+.logoutBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .layout {
   align-items: stretch;
   display: flex;

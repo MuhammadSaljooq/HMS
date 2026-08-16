@@ -208,7 +208,7 @@ export default function PatientRecordsPage() {
       <aside className={styles.rightPanel}>
           <header className={styles.panelHeader}>
             <h3 className={styles.panelTitle}>Patient Snapshot</h3>
-            <span className={styles.smallBtn}>👁</span>
+            <span className={styles.smallBtn} aria-hidden="true">👁</span>
           </header>
 
           <div className={styles.reminderCard}>
@@ -235,7 +235,7 @@ export default function PatientRecordsPage() {
                 <p className={styles.confName}>Patient identifier</p>
                 <p className={styles.confDoctor}>Used across appointments and chart search.</p>
               </div>
-              <span className={styles.confArrow}>•</span>
+              <span className={styles.confArrow} aria-hidden="true" />
             </div>
             <div className={styles.confItem}>
               <div>
@@ -248,7 +248,7 @@ export default function PatientRecordsPage() {
                   {patient ? `${patient.gender ?? "Gender not set"} · ${patient.blood_group ?? "Blood group not set"}` : "Pending"}
                 </p>
               </div>
-              <span className={styles.confArrow}>•</span>
+              <span className={styles.confArrow} aria-hidden="true" />
             </div>
             <div className={styles.confItem}>
               <div>
@@ -259,7 +259,7 @@ export default function PatientRecordsPage() {
                 <p className={styles.confName}>Primary contact</p>
                 <p className={styles.confDoctor}>Use for follow-up and appointment reminders.</p>
               </div>
-              <span className={styles.confArrow}>•</span>
+              <span className={styles.confArrow} aria-hidden="true" />
             </div>
           </div>
 

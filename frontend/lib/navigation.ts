@@ -1,14 +1,14 @@
 import {
+  BarChart3,
+  Boxes,
   CalendarDays,
   ClipboardList,
   LayoutDashboard,
   Mic,
-  PackagePlus,
   Pill,
   Receipt,
   Settings,
   Stethoscope,
-  UserPlus,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -41,8 +41,8 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
   { href: "/dashboard/doctors-staff", label: "Doctors and Staff", shortLabel: "Staff", icon: Stethoscope, roles: ADMIN_OPERATIONS_ROLES },
   { href: "/dashboard/room", label: "Room", shortLabel: "Room", icon: Warehouse, roles: ADMIN_OPERATIONS_ROLES },
   { href: "/dashboard/medicine", label: "Medicine", shortLabel: "Meds", icon: Pill, roles: ADMIN_OPERATIONS_ROLES },
-  { href: "/dashboard/analitik", label: "Analitik", shortLabel: "Stats", icon: PackagePlus, roles: ADMIN_OPERATIONS_ROLES },
-  { href: "/dashboard/inventory", label: "Inventory", shortLabel: "Stock", icon: UserPlus, roles: ADMIN_OPERATIONS_ROLES },
+  { href: "/dashboard/analitik", label: "Analitik", shortLabel: "Stats", icon: BarChart3, roles: ADMIN_OPERATIONS_ROLES },
+  { href: "/dashboard/inventory", label: "Inventory", shortLabel: "Stock", icon: Boxes, roles: ADMIN_OPERATIONS_ROLES },
   { href: "/dashboard/settings", label: "Settings", shortLabel: "More", icon: Settings, roles: SETTINGS_ROLES },
 ];
 
