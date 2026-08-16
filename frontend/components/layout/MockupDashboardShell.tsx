@@ -171,6 +171,8 @@ export function MockupDashboardShell({
   const appName = "National Eye Care";
   const roleLabel = user ? USER_ROLE_LABELS[user.role] : "Staff";
   const userName = user?.full_name ?? "Loading session";
+  // When collapsed on desktop, the logo itself becomes the expand control.
+  const showCollapsedHeader = collapsed && !mobileOpen;
 
   const logo = (
     <svg
@@ -217,29 +219,47 @@ export function MockupDashboardShell({
         className={`${styles.sidebar} ${mobileOpen ? styles.sidebarMobileOpen : ""}`}
       >
         <div className={styles.sbHeader}>
-          <span className={styles.sbLogo}>{logo}</span>
-          <span className={styles.sbWordmark}>{appName}</span>
-          <button
-            type="button"
-            className={styles.sbToggle}
-            onClick={toggleCollapsed}
-            aria-expanded={!collapsed}
-            aria-label="Toggle sidebar"
-          >
-            {collapsed ? (
-              <PanelLeftOpen size={18} strokeWidth={1.75} aria-hidden="true" />
-            ) : (
-              <PanelLeftClose size={18} strokeWidth={1.75} aria-hidden="true" />
-            )}
-          </button>
-          <button
-            type="button"
-            className={styles.sbClose}
-            onClick={() => setMobileOpen(false)}
-            aria-label="Close menu"
-          >
-            <X size={18} strokeWidth={1.75} aria-hidden="true" />
-          </button>
+          {showCollapsedHeader ? (
+            <button
+              type="button"
+              className={styles.sbLogoBtn}
+              onClick={toggleCollapsed}
+              aria-expanded={false}
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+            >
+              <span className={styles.sbLogoMark}>{logo}</span>
+              <PanelLeftOpen
+                className={styles.sbLogoExpand}
+                size={18}
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+            </button>
+          ) : (
+            <>
+              <span className={styles.sbLogo}>{logo}</span>
+              <span className={styles.sbWordmark}>{appName}</span>
+              <button
+                type="button"
+                className={styles.sbToggle}
+                onClick={toggleCollapsed}
+                aria-expanded={true}
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+              >
+                <PanelLeftClose size={18} strokeWidth={1.75} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className={styles.sbClose}
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close menu"
+              >
+                <X size={18} strokeWidth={1.75} aria-hidden="true" />
+              </button>
+            </>
+          )}
         </div>
 
         <nav className={styles.sbNav} aria-label="Primary">

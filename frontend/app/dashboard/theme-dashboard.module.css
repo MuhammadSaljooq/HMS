@@ -119,6 +119,53 @@
   display: none;
 }
 
+/* Collapsed: the logo doubles as the expand control (hover reveals a chevron). */
+.sbLogoBtn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 44px;
+  justify-content: center;
+  margin: 0 auto;
+  position: relative;
+  transition: background var(--dur-hover) var(--ease-standard);
+  width: 44px;
+}
+
+.sbLogoBtn:hover {
+  background: rgba(26, 29, 33, 0.05);
+}
+
+.sbLogoMark {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  transition: opacity var(--dur-hover) var(--ease-standard);
+}
+
+.sbLogoExpand {
+  color: var(--accent-teal);
+  inset: 0;
+  margin: auto;
+  opacity: 0;
+  position: absolute;
+  transition: opacity var(--dur-hover) var(--ease-standard);
+}
+
+.sbLogoBtn:hover .sbLogoMark,
+.sbLogoBtn:focus-visible .sbLogoMark {
+  opacity: 0;
+}
+
+.sbLogoBtn:hover .sbLogoExpand,
+.sbLogoBtn:focus-visible .sbLogoExpand {
+  opacity: 1;
+}
+
 .sbNav {
   min-height: 0;
   padding: 4px 0;
@@ -213,6 +260,7 @@
 
 .sbItem:focus-visible,
 .sbToggle:focus-visible,
+.sbLogoBtn:focus-visible,
 .sbLogout:focus-visible,
 .mobileMenuBtn:focus-visible,
 .sbClose:focus-visible {
@@ -970,6 +1018,8 @@
   .sbItem,
   .sbLogout,
   .sbToggle,
+  .sbLogoMark,
+  .sbLogoExpand,
   .layout,
   .sbScrim {
     transition: none !important;
