@@ -251,7 +251,7 @@ function PatientsPageContent() {
         </div>
 
         <div className={styles.summaryCard}>
-          <p className={styles.summaryLabel}>Gender split</p>
+          <p className={styles.summaryLabel}>Gender split (this page)</p>
           <div className={styles.badgeRow}>
             <span className={styles.statBadge}>F {genderStats.female}</span>
             <span className={styles.statBadge}>M {genderStats.male}</span>

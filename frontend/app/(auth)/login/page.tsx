@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -205,7 +204,7 @@ function LoginForm() {
                 </span>
                 <span className={styles.rememberLabel}>Remember me</span>
               </label>
-              <a href="#" className={styles.forgotLink}>
+              <a href="mailto:it-support@nech.com" className={styles.forgotLink}>
                 Forgot password?
               </a>
             </div>
@@ -219,18 +218,13 @@ function LoginForm() {
 
           <div className={styles.divider}>or continue with</div>
 
-          <button type="button" className={styles.ssoBtn}>
+          <button type="button" className={styles.ssoBtn} disabled title="SSO is not configured yet">
             <span className={styles.ssoIcon}>+</span>
             Sign in with Hospital SSO
           </button>
 
           <p className={styles.loginFooter}>
             Trouble signing in? Contact IT or your ward administrator.
-          </p>
-          <p className={styles.backLinkRow}>
-            <Link href="/dashboard" className={styles.backLink}>
-              Back to dashboard
-            </Link>
           </p>
         </section>
       </div>

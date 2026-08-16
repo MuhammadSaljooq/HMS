@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 0 0% 100%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -12,9 +12,9 @@
     --popover-foreground: 222 47% 11%;
     --primary: 173 77% 26%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 214 32% 91%;
+    --secondary: 173 44% 95%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 214 32% 91%;
+    --muted: 173 30% 96%;
     --muted-foreground: 215 16% 47%;
     --accent: 173 55% 94%;
     --accent-foreground: 173 77% 20%;
@@ -33,7 +33,7 @@
     --sidebar-foreground: 222 47% 11%;
     --sidebar-primary: 173 77% 26%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent: 173 44% 95%;
     --sidebar-accent-foreground: 222 47% 11%;
     --sidebar-border: 214 32% 91%;
     --sidebar-ring: 173 77% 26%;
@@ -87,5 +87,23 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/*
+ * Print: hide the dashboard chrome (top nav + side rail/right panel) so
+ * per-payment "Print" buttons yield a clean page with only the main content.
+ */
+@media print {
+  nav,
+  aside {
+    display: none !important;
+  }
+
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 }

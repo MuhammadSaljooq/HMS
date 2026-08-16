@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import type { TranscriptionPipelineResult, TranscriptionSections, TranscriptionStatus } from "@/types";
 
 const SECTION_KEYS: { key: keyof TranscriptionSections; label: string }[] = [
@@ -99,7 +100,7 @@ export function TranscriptDisplay({
     try {
       await onSaveEdits(draft);
     } catch (e: unknown) {
-      setActionError(e instanceof Error ? e.message : "Could not save transcript edits.");
+      setActionError(getApiErrorMessage(e, "Could not save transcript edits."));
     } finally {
       setSavingEdits(false);
     }
@@ -112,7 +113,7 @@ export function TranscriptDisplay({
     try {
       await onApprove();
     } catch (e: unknown) {
-      setActionError(e instanceof Error ? e.message : "Could not approve transcript.");
+      setActionError(getApiErrorMessage(e, "Could not approve transcript."));
     } finally {
       setApproving(false);
     }

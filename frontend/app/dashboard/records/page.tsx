@@ -6,11 +6,15 @@ import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { usePatients } from "@/hooks/usePatients";
 import { calculateAge } from "@/lib/patient-utils";
+import { SETTINGS_ROLES, hasRequiredRole } from "@/lib/rbac";
+import { useAuthStore } from "@/store/authStore";
 import type { Patient } from "@/types";
 import styles from "../theme-dashboard.module.css";
 
 export default function RecordsHubPage() {
   const { list } = usePatients();
+  const role = useAuthStore((s) => s.user?.role);
+  const canManageSettings = hasRequiredRole(role ?? "", SETTINGS_ROLES);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,19 +75,19 @@ export default function RecordsHubPage() {
 
           <div className={styles.statRow}>
             <div className={styles.summaryCard}>
-              <p className={styles.summaryLabel}>Search results</p>
+              <p className={styles.summaryLabel}>Search results (top 12)</p>
               <p className={styles.summaryValue}>{hasSearch ? summary.results : "0"}</p>
-              <p className={styles.summarySub}>Patients matching the current filter.</p>
+              <p className={styles.summarySub}>Patients shown from the top 12 matches.</p>
             </div>
             <div className={styles.summaryCard}>
-              <p className={styles.summaryLabel}>Phone-ready</p>
+              <p className={styles.summaryLabel}>Phone-ready (top 12)</p>
               <p className={styles.summaryValue}>{hasSearch ? summary.withPhone : "0"}</p>
-              <p className={styles.summarySub}>Matches with a contact number on file.</p>
+              <p className={styles.summarySub}>Top 12 matches with a contact number on file.</p>
             </div>
             <div className={styles.summaryCard}>
-              <p className={styles.summaryLabel}>Average age</p>
+              <p className={styles.summaryLabel}>Average age (top 12)</p>
               <p className={styles.summaryValue}>{hasSearch && summary.results > 0 ? `${summary.avgAge}` : "--"}</p>
-              <p className={styles.summarySub}>Quick demographic snapshot for the filtered list.</p>
+              <p className={styles.summarySub}>Snapshot across the top 12 results shown.</p>
             </div>
           </div>
 
@@ -209,17 +213,31 @@ export default function RecordsHubPage() {
               </div>
               <span className={styles.confArrow}>↗</span>
             </Link>
-            <Link href="/dashboard/settings" className={styles.confItem}>
-              <div>
-                <span className={styles.confDate}>Admin</span>
-                <span className={styles.confHour}>SET</span>
-              </div>
-              <div>
-                <p className={styles.confName}>Manage staff access</p>
-                <p className={styles.confDoctor}>Control who can create and review records.</p>
-              </div>
-              <span className={styles.confArrow}>↗</span>
-            </Link>
+            {canManageSettings ? (
+              <Link href="/dashboard/settings" className={styles.confItem}>
+                <div>
+                  <span className={styles.confDate}>Admin</span>
+                  <span className={styles.confHour}>SET</span>
+                </div>
+                <div>
+                  <p className={styles.confName}>Manage staff access</p>
+                  <p className={styles.confDoctor}>Control who can create and review records.</p>
+                </div>
+                <span className={styles.confArrow}>↗</span>
+              </Link>
+            ) : (
+              <Link href="/dashboard/patients" className={styles.confItem}>
+                <div>
+                  <span className={styles.confDate}>Charts</span>
+                  <span className={styles.confHour}>PAT</span>
+                </div>
+                <div>
+                  <p className={styles.confName}>Browse patient charts</p>
+                  <p className={styles.confDoctor}>Open the patient worklist to review records.</p>
+                </div>
+                <span className={styles.confArrow}>↗</span>
+              </Link>
+            )}
           </div>
 
           <Link href="/dashboard/patients" className={styles.makeConfBtn}>

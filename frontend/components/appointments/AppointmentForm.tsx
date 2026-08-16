@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAppointments } from "@/hooks/useAppointments";
 import { usePatients } from "@/hooks/usePatients";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { cn } from "@/lib/utils";
 import type { AppointmentSlot, Patient, User } from "@/types";
 
@@ -68,6 +69,8 @@ export function AppointmentForm({
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [slotError, setSlotError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -79,6 +82,8 @@ export function AppointmentForm({
       setSlotStart(null);
       setChiefComplaint("");
       setFormError(null);
+      setSlotError(null);
+      setSearchError(null);
     }
   }, [open, defaultDate, defaultDoctorId]);
 
@@ -92,11 +97,15 @@ export function AppointmentForm({
     (async () => {
       setLoadingSlots(true);
       setSlotStart(null);
+      setSlotError(null);
       try {
         const data = await fetchSlots(doctorId, date);
         if (!cancelled) setSlots(data);
-      } catch {
-        if (!cancelled) setSlots([]);
+      } catch (e: unknown) {
+        if (!cancelled) {
+          setSlots([]);
+          setSlotError(getApiErrorMessage(e, "Could not load slots."));
+        }
       } finally {
         if (!cancelled) setLoadingSlots(false);
       }
@@ -113,11 +122,13 @@ export function AppointmentForm({
     }
     const t = setTimeout(() => {
       void (async () => {
+        setSearchError(null);
         try {
           const res = await searchPatients({ search: patientQuery.trim(), limit: 8, skip: 0 });
           setPatientHits(res.items);
-        } catch {
+        } catch (e: unknown) {
           setPatientHits([]);
+          setSearchError(getApiErrorMessage(e, "Could not search patients."));
         }
       })();
     }, 300);
@@ -145,11 +156,7 @@ export function AppointmentForm({
       onSaved();
       onOpenChange(false);
     } catch (e: unknown) {
-      const msg =
-        typeof e === "object" && e !== null && "response" in e
-          ? String((e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail ?? "Save failed")
-          : "Save failed";
-      setFormError(typeof msg === "string" ? msg : "Save failed");
+      setFormError(getApiErrorMessage(e, "Save failed"));
     } finally {
       setSubmitting(false);
     }
@@ -203,6 +210,7 @@ export function AppointmentForm({
                     ))}
                   </ul>
                 )}
+                {searchError && <p className="text-sm text-destructive">{searchError}</p>}
               </>
             )}
           </div>
@@ -235,6 +243,8 @@ export function AppointmentForm({
               <p className="text-sm text-muted-foreground">Select a doctor to load slots.</p>
             ) : loadingSlots ? (
               <p className="text-sm text-muted-foreground">Loading slots…</p>
+            ) : slotError ? (
+              <p className="text-sm text-destructive">{slotError}</p>
             ) : slots.length === 0 ? (
               <p className="text-sm text-muted-foreground">No slots for this day.</p>
             ) : (

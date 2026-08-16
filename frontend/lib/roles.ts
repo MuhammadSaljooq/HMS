@@ -1,7 +1,5 @@
 import type { UserRole } from "@/types";
 
-export const ASSIGNABLE_USER_ROLES: UserRole[] = ["admin", "doctor", "nurse", "receptionist", "cashier"];
-
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   admin: "Admin",
   doctor: "Doctor",
@@ -9,11 +7,6 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
   receptionist: "Receptionist",
   cashier: "Cashier",
 };
-
-export const ASSIGNABLE_USER_ROLE_OPTIONS = ASSIGNABLE_USER_ROLES.map((role) => ({
-  role,
-  label: USER_ROLE_LABELS[role],
-}));
 
 export const LOGIN_ROLE_OPTIONS: Array<{
   role: UserRole;

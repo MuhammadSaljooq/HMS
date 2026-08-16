@@ -172,7 +172,7 @@ export default function PatientDetailPage() {
         <aside className={styles.rightPanel}>
           <header className={styles.panelHeader}>
             <h3 className={styles.panelTitle}>Chart status</h3>
-            <span className={styles.smallBtn}>⚠</span>
+            <span className={styles.smallBtn} aria-hidden="true">⚠</span>
           </header>
           <div className={styles.reminderCard}>
             <span className={styles.reminderIcon}>🧾</span>
@@ -549,7 +549,7 @@ export default function PatientDetailPage() {
       <aside className={styles.rightPanel}>
         <header className={styles.panelHeader}>
           <h3 className={styles.panelTitle}>Patient Snapshot</h3>
-          <span className={styles.smallBtn}>🧾</span>
+          <span className={styles.smallBtn} aria-hidden="true">🧾</span>
         </header>
 
         <div className={styles.summaryCard}>
@@ -577,7 +577,7 @@ export default function PatientDetailPage() {
               <p className={styles.confName}>Open records history</p>
               <p className={styles.confDoctor}>Review past diagnoses and prescriptions.</p>
             </div>
-            <span className={styles.confArrow}>↗</span>
+            <span className={styles.confArrow} aria-hidden="true">↗</span>
           </Link>
           <Link href={`/dashboard/appointments${nextAppointment ? `/${nextAppointment.id}` : ""}`} className={styles.confItem}>
             <div>
@@ -588,9 +588,9 @@ export default function PatientDetailPage() {
               <p className={styles.confName}>{nextAppointment ? "Open next appointment" : "Schedule appointment"}</p>
               <p className={styles.confDoctor}>{nextAppointment ? "Jump to the linked appointment detail." : "Create a new visit from the schedule board."}</p>
             </div>
-            <span className={styles.confArrow}>↗</span>
+            <span className={styles.confArrow} aria-hidden="true">↗</span>
           </Link>
-          <div className={styles.confItem}>
+          <Link href="/dashboard/transcriber" className={styles.confItem}>
             <div>
               <span className={styles.confDate}>AI</span>
               <span className={styles.confHour}>{latestTranscription ? "ON" : "--"}</span>
@@ -599,8 +599,8 @@ export default function PatientDetailPage() {
               <p className={styles.confName}>Latest transcription</p>
               <p className={styles.confDoctor}>{latestTranscription ? formatDate(latestTranscription.created_at) : "No transcription linked yet."}</p>
             </div>
-            <span className={styles.confArrow}>•</span>
-          </div>
+            <span className={styles.confArrow} aria-hidden="true">↗</span>
+          </Link>
         </div>
 
         <Link href="/dashboard/patients" className={styles.makeConfBtn}>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import type { DashboardStats, User } from "@/types";
 import styles from "../theme-dashboard.module.css";
 
@@ -18,6 +19,7 @@ export default function DoctorsStaffPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [doctors, setDoctors] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,10 +32,12 @@ export default function DoctorsStaffPage() {
         if (cancelled) return;
         setStats(statsRes.data);
         setDoctors(doctorsRes.data);
-      } catch {
+        setError(null);
+      } catch (e: unknown) {
         if (!cancelled) {
           setStats(null);
           setDoctors([]);
+          setError(getApiErrorMessage(e, "Could not load doctors and staff."));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -51,6 +55,8 @@ export default function DoctorsStaffPage() {
     <>
       <main className={styles.main}>
           <h1 className={styles.sectionTitle}>Doctors &amp; Staff</h1>
+
+          {error && <p className={styles.errorText}>{error}</p>}
 
           <div className={styles.statRow}>
             <article className={styles.statCard}>
@@ -87,6 +93,10 @@ export default function DoctorsStaffPage() {
                 <div className={styles.tableRow} style={{ gridTemplateColumns: "1fr" }}>
                   <span className={styles.tableCell}>Loading doctors...</span>
                 </div>
+              ) : error ? (
+                <div className={styles.tableRow} style={{ gridTemplateColumns: "1fr" }}>
+                  <span className={styles.tableCell}>Could not load the doctor directory.</span>
+                </div>
               ) : doctors.length === 0 ? (
                 <div className={styles.tableRow} style={{ gridTemplateColumns: "1fr" }}>
                   <span className={styles.tableCell}>No doctors available</span>
@@ -112,6 +122,8 @@ export default function DoctorsStaffPage() {
           <div className={styles.conferenceList}>
             {loading ? (
               <p className={styles.confDoctor}>Loading doctor roster...</p>
+            ) : error ? (
+              <p className={styles.confDoctor}>Could not load the roster.</p>
             ) : doctors.length === 0 ? (
               <p className={styles.confDoctor}>No doctors available.</p>
             ) : (

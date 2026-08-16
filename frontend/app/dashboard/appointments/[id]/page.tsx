@@ -46,6 +46,8 @@ export default function AppointmentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isActing, setIsActing] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
   const [notes, setNotes] = useState("");
 
   const load = useCallback(async () => {
@@ -69,35 +71,48 @@ export default function AppointmentDetailPage() {
   }, [load]);
 
   async function saveNotes() {
-    if (!row) return;
+    if (!row || isActing) return;
     setActionError(null);
+    setNotesSaved(false);
+    setIsActing(true);
     try {
       const updated = await update(row.id, { notes: notes || null });
       setRow((r) => (r ? { ...r, notes: updated.notes } : null));
+      setNotesSaved(true);
     } catch (e: unknown) {
       setActionError(getApiErrorMessage(e, "Could not save notes."));
+    } finally {
+      setIsActing(false);
     }
   }
 
   async function onStatusChange(next: AppointmentStatus) {
-    if (!row || next === row.status) return;
+    if (!row || next === row.status || isActing) return;
     setActionError(null);
+    setNotesSaved(false);
+    setIsActing(true);
     try {
       const updated = await update(row.id, { status: next });
       setRow((r) => (r ? { ...r, status: updated.status } : null));
     } catch (e: unknown) {
       setActionError(getApiErrorMessage(e, "Could not update status."));
+    } finally {
+      setIsActing(false);
     }
   }
 
   async function onCancelAppt() {
-    if (!row || !window.confirm("Cancel this appointment?")) return;
+    if (!row || isActing || !window.confirm("Cancel this appointment?")) return;
     setActionError(null);
+    setNotesSaved(false);
+    setIsActing(true);
     try {
       await cancel(row.id);
       await load();
     } catch (e: unknown) {
       setActionError(getApiErrorMessage(e, "Could not cancel the appointment."));
+    } finally {
+      setIsActing(false);
     }
   }
 
@@ -110,7 +125,7 @@ export default function AppointmentDetailPage() {
         <aside className={styles.rightPanel}>
           <header className={styles.panelHeader}>
             <h3 className={styles.panelTitle}>Visit</h3>
-            <span className={styles.smallBtn}>⏳</span>
+            <span className={styles.smallBtn} aria-hidden="true">⏳</span>
           </header>
         </aside>
       </>
@@ -208,7 +223,6 @@ export default function AppointmentDetailPage() {
             <div className={styles.dataCard}>
               <header className={styles.dataHeader}>
                 <h3 className={styles.dataTitle}>Manage</h3>
-                <span className={styles.dropdown}>Actions ▾</span>
               </header>
               <p className={styles.heroSubtitle} style={{ margin: 0 }}>
                 Update status, notes, or cancel.
@@ -216,7 +230,7 @@ export default function AppointmentDetailPage() {
               <div className="mt-4 space-y-4">
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Select value={row.status} onValueChange={(v) => void onStatusChange(v as AppointmentStatus)}>
+                  <Select value={row.status} onValueChange={(v) => void onStatusChange(v as AppointmentStatus)} disabled={isActing}>
                     <SelectTrigger className="max-w-xs">
                       <SelectValue />
                     </SelectTrigger>
@@ -231,13 +245,16 @@ export default function AppointmentDetailPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="notes">Notes</Label>
-                  <Textarea id="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
-                  <Button type="button" size="sm" variant="secondary" onClick={() => void saveNotes()}>
-                    Save notes
+                  <Textarea id="notes" rows={3} value={notes} onChange={(e) => { setNotes(e.target.value); setNotesSaved(false); }} />
+                  <Button type="button" size="sm" variant="secondary" onClick={() => void saveNotes()} disabled={isActing}>
+                    {isActing ? "Saving…" : "Save notes"}
                   </Button>
+                  {notesSaved && (
+                    <p className="text-sm font-medium text-emerald-600">Saved.</p>
+                  )}
                 </div>
                 {row.status !== "cancelled" && (
-                  <Button type="button" variant="destructive" onClick={() => void onCancelAppt()}>
+                  <Button type="button" variant="destructive" onClick={() => void onCancelAppt()} disabled={isActing}>
                     Cancel appointment
                   </Button>
                 )}
@@ -255,7 +272,7 @@ export default function AppointmentDetailPage() {
       <aside className={styles.rightPanel}>
         <header className={styles.panelHeader}>
           <h3 className={styles.panelTitle}>Visit checklist</h3>
-          <span className={styles.smallBtn}>📋</span>
+          <span className={styles.smallBtn} aria-hidden="true">📋</span>
         </header>
         <div className={styles.reminderCard}>
           <span className={styles.reminderIcon}>✓</span>
