@@ -68,7 +68,7 @@ There is no separate backend lint config; correctness is enforced by the test su
 **Layering:** `routers/` (HTTP + authz gating, own `_get_*_or_404` helpers) → `services/` (business logic) → `models/` (ORM). Rule: **services `flush`/`refresh` but do NOT commit; the router commits.** Follow this or transactions won't behave.
 
 - **Auth (`utils/deps.py`, `services/auth_service.py`, `routers/auth.py`):** `get_current_user` reads the JWT from cookie or `Authorization: Bearer`. `require_role(*roles)` gates endpoints and **admin passes every role check** (superuser). Refresh-token rotation with a Redis-backed denylist (SHA-256 fingerprints). Login is constant-time (dummy-hash for unknown users); password policy min 12 + letter + digit lives on the Pydantic schemas in `schemas/user.py`.
-- **Authorization (`services/authorization_service.py`):** centralizes all role/ownership predicates (`can_manage_billing`, `can_void_invoice`, `ensure_can_view_patient`, doctor-scoped record/appointment access, etc.). Put access logic here, not inline in routers.
+- **Authorization (`services/authorization_service.py`):** centralizes all role/ownership predicates (`can_manage_billing`, `can_void_invoice`, `ensure_can_view_patient`, `can_manage_appointment` (includes nurse), doctor-scoped record/appointment access, etc.). Put access logic here, not inline in routers. Read endpoints on patients/appointments/records/transcriptions are additionally gated with `require_role(...)` per the role matrix (see "Roles & access control" below) — the API is the real access boundary, defense-in-depth with the UI.
 - **Audit + soft-delete (PHI safety):** `services/audit_service.record(...)` appends to the append-only `audit_logs` table (flush-only; committed atomically with the mutation) — call it on create/update/delete of clinical + financial + user entities. Clinical/financial entities use a `SoftDeleteMixin` (`deleted_at`/`deleted_by`); **deletes are soft (cascade + audit), never hard.** Every read must exclude soft-deleted rows (`models/… .deleted_at.is_(None)` / `services/soft_delete.py`). List endpoints stay bare arrays but enforce `skip`/`limit` caps — do not change list response shapes.
 - **Billing:** money is `Numeric(12,2)` / `Decimal` and serializes to JSON **strings** (Pydantic v2) — the frontend treats money as `string`. `services/billing_calc.py` is pure, unit-tested math; `record_payment` row-locks the invoice (`SELECT … FOR UPDATE`). Daily/reconciliation reports bucket by **Asia/Karachi** day.
 - **Transcriber:** `routers/transcribe.py` / `transcriptions.py` + `services/transcription_service.py`. Provider selection at runtime: Gemini (primary, if `GOOGLE_API_KEY`) else Whisper + Claude (`claude-sonnet-4-6`) cleanup. Prompts are bilingual (Urdu + English, preserved, not translated away); `WHISPER_LANGUAGE` must stay unset (auto). Long clips go async via Celery (`tasks/transcribe_task.py`). A transcription must be **approved** (review/edit/approve workflow) before it can be linked to a medical record.
@@ -79,11 +79,30 @@ There is no separate backend lint config; correctness is enforced by the test su
 ## Frontend architecture
 
 - **Shell:** `app/dashboard/layout.tsx` → `DashboardChrome` → `MockupDashboardShell` (a single **floating collapsible sidebar**; there is no top nav). Nav items (with lucide `icon` components) come from `lib/navigation.ts`; the sidebar renders those icons, a shared animated active indicator, collapse/expand (⌘B, persisted to `localStorage`, logo acts as the expand control when collapsed), and a mobile drawer.
-- **RBAC (client, advisory — real enforcement is server-side):** `lib/rbac.ts` holds route rules + `DEFAULT_ROLE_HOME_PATHS` + `hasRequiredRole` (admin always allowed); `middleware.ts` decodes the JWT cookie to gate `/dashboard/*`; `components/layout/RoleGuard.tsx` guards admin-only pages. `UserRole` is a `Record`-keyed type — adding a role means updating `types/index.ts`, `lib/rbac.ts` (both `Record<UserRole,…>` maps), `lib/roles.ts`, and `lib/navigation.ts`.
+- **RBAC (client gating — real enforcement is server-side):** `lib/rbac.ts` holds the role sets + route rules + `DEFAULT_ROLE_HOME_PATHS` + `hasRequiredRole` (admin always allowed); `middleware.ts` decodes the JWT cookie to gate `/dashboard/*`; `components/layout/RoleGuard.tsx` wraps restricted pages (patients/appointments/records/transcriber/settings). Nav visibility is driven by each item's `roles` in `lib/navigation.ts`. See "Roles & access control" for the matrix. `UserRole` is a `Record`-keyed type — adding a role means updating `types/index.ts`, `lib/rbac.ts` (both `Record<UserRole,…>` maps + the route rules), `lib/roles.ts`, and `lib/navigation.ts`. The admin **Settings** page is the master account manager (create/change-role/deactivate users via `hooks/queries/useUsers.ts`).
 - **Auth store (`store/authStore.ts`):** Zustand, persisted to `localStorage`. `lib/api.ts` is the axios client (same-origin `/api`, attaches bearer, and on 401 auto-calls `/auth/refresh` once then retries). Errors are normalized through `lib/api-errors.ts` `getApiErrorMessage` — use it everywhere instead of hand-rolling `e.message`.
 - **Data fetching:** canonical pattern is React Query hooks in `hooks/queries/` (e.g. `useInvoiceDetail`, `usePatientDirectoryQuery`). A few pages still use legacy `useState`+`api` hooks (`hooks/useAppointments.ts`, `usePatients.ts`) — prefer the `queries/` pattern for new work.
 - **Money:** always a `string` from the API; format via `lib/money.ts` `formatCurrency` / `todayInClinicTz` (Asia/Karachi). Never do float math on money for display.
 - **Theming:** the dashboard uses per-directory CSS Modules (`app/dashboard/theme-*.module.css`) with tokens on `.page` (`--bg/--surface/--card/--accent-teal/…`, all pure white backgrounds + motion tokens `--ease-standard`/`--dur-*`). Shared shadcn-style `components/ui/*` read HSL tokens from `app/globals.css` (`--background`, `--card`, `--primary` = teal, `--secondary`/`--muted` retinted faint-teal). Accent is teal `#6bbfcc`; destructive/CTA is `--accent-red` `#f05c3a`.
+
+## Roles & access control (RBAC)
+
+Five roles: `admin | doctor | nurse | receptionist | cashier`. **Admin is a superuser** (`require_role` / `hasRequiredRole` always pass for admin). Access is enforced on **both** layers — the UI (`lib/rbac.ts` route rules + `middleware.ts` + per-page `RoleGuard` + `lib/navigation.ts` nav gating) and the API (`require_role(...)` on the routers + predicates in `authorization_service.py`). To change access, update the role set in `lib/rbac.ts` **and** the matching `require_role`/predicate on the backend endpoint.
+
+| Area | admin | doctor | nurse | receptionist | cashier |
+|---|:--:|:--:|:--:|:--:|:--:|
+| Account mgmt / Settings, Dashboard, ops (Doctors&Staff, Room, Medicine, Analitik, Inventory) | ✅ | — | — | — | — |
+| Patients (view) | ✅ | ✅ | ✅ | ✅ | — |
+| Register patient | ✅ | ✅ | — | ✅ | — |
+| Appointments (manage) | ✅ | ✅ | ✅ | ✅ | — |
+| Records — view | ✅ | ✅ | ✅ | ✅ | — |
+| Records — create/edit | ✅ | ✅ | — | — | — |
+| Transcriber | ✅ | ✅ | — | — | — |
+| Billing (catalog/void = admin only) | ✅ | — | — | — | ✅ |
+
+- Per-role landing (`DEFAULT_ROLE_HOME_PATHS`): admin→`/dashboard`, doctor→`/dashboard/records`, nurse→`/dashboard/patients`, receptionist→`/dashboard/appointments`, cashier→`/dashboard/billing`.
+- **Master account management** (admin-only Settings): create (`POST /auth/register`), change role, deactivate/reactivate via `GET`/`PATCH /api/users`. **"Remove" = deactivate** (`is_active=false`) to preserve the audit trail; backend guards block self-deactivate/demote and removing the last active admin.
+- Cashier is billing-only and gets a name/MRN patient lookup (`/api/billing/patients/lookup`) with **no** clinical data.
 
 ## Deployment (per README)
 
@@ -93,4 +112,4 @@ There is no separate backend lint config; correctness is enforced by the test su
 
 ## Known deferred work (infrastructure/vendor — not doable locally)
 
-Documented in the specs: encryption-at-rest (KMS/S3) and MFA; vendor BAAs and migrating Gemini off the AI-Studio key endpoint to Vertex AI; speaker diarization; real backends for the room/pharmacy/inventory pages (currently honest "coming soon"); an admin cashier-picker on the reconciliation report (needs a list-users endpoint).
+Documented in the specs: encryption-at-rest (KMS/S3) and MFA; vendor BAAs and migrating Gemini off the AI-Studio key endpoint to Vertex AI; speaker diarization; real backends for the room/pharmacy/inventory pages (currently honest "coming soon"). (User management now exists — admin Settings screen + `GET`/`PATCH /api/users`.)
