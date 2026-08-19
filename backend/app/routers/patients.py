@@ -35,7 +35,10 @@ async def _get_patient_or_404(db: AsyncSession, patient_id: UUID) -> Patient:
 @router.get("", response_model=PatientListResponse, status_code=status.HTTP_200_OK)
 async def list_patients(
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
     search: str | None = Query(None, description="Search by name, MRN, or phone"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
@@ -106,7 +109,10 @@ async def create_patient(
 async def list_patient_transcriptions(
     patient_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
 ) -> list[Transcription]:
@@ -130,7 +136,10 @@ async def list_patient_transcriptions(
 async def get_patient(
     patient_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
 ) -> Patient:
     patient = await _get_patient_or_404(db, patient_id)
     await ensure_can_view_patient(db, current, patient_id)
@@ -277,7 +286,10 @@ async def add_vitals(
 async def list_vitals(
     patient_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
 ) -> list[Vitals]:

@@ -23,7 +23,7 @@ from app.services.authorization_service import (
     ensure_can_attach_transcription_to_record,
     ensure_can_view_record,
 )
-from app.utils.deps import get_current_user, get_db, require_role
+from app.utils.deps import get_db, require_role
 
 router = APIRouter(prefix="/transcriptions", tags=["Transcriptions"])
 
@@ -106,7 +106,7 @@ def _transcription_list_select():
 @router.get("", response_model=list[TranscriptionListItem], status_code=status.HTTP_200_OK)
 async def list_transcriptions(
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[User, Depends(require_role(UserRole.admin, UserRole.doctor))],
     medical_record_id: UUID | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
@@ -226,7 +226,7 @@ async def approve_transcription(
 async def get_transcription(
     transcription_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[User, Depends(require_role(UserRole.admin, UserRole.doctor))],
 ) -> Transcription:
     tr = await transcription_workflow_service.get_transcription_or_404(db, transcription_id)
     if tr.medical_record_id is None:

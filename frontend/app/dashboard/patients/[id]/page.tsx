@@ -15,6 +15,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { RoleGuard } from "@/components/layout/RoleGuard";
 import { VitalsForm } from "@/components/patients/VitalsForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { calculateAge, formatDate } from "@/lib/patient-utils";
 import { usePatientDetailData } from "@/hooks/queries/usePatientDetailData";
+import { CLINICAL_VIEW_ROLES } from "@/lib/rbac";
 import { usePatientStore } from "@/store/patientStore";
 import type { Appointment, MedicalRecord, MedicalRecordDetail, Transcription, Vitals } from "@/types";
 import styles from "../../theme-dashboard.module.css";
@@ -43,6 +45,14 @@ function statusBadgeVariant(s: string): "default" | "secondary" | "destructive" 
 }
 
 export default function PatientDetailPage() {
+  return (
+    <RoleGuard roles={CLINICAL_VIEW_ROLES}>
+      <PatientDetailContent />
+    </RoleGuard>
+  );
+}
+
+function PatientDetailContent() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params?.id ?? "";

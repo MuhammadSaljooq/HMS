@@ -32,7 +32,10 @@ router = APIRouter(prefix="/records", tags=["Medical Records"])
 @router.get("", response_model=list[MedicalRecordRead], status_code=status.HTTP_200_OK)
 async def list_records(
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
     patient_id: UUID | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
@@ -84,7 +87,10 @@ async def create_record(
 async def get_record(
     record_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
 ) -> MedicalRecord:
     record = await record_service.get_record_or_404(db, record_id)
     await ensure_can_view_record(db, current, record)

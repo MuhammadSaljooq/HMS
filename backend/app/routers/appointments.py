@@ -41,7 +41,7 @@ from app.services.authorization_service import (
     ensure_can_view_patient,
 )
 from app.services.soft_delete import not_deleted
-from app.utils.deps import get_current_user, get_db, require_role
+from app.utils.deps import get_db, require_role
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
@@ -54,7 +54,10 @@ router = APIRouter(prefix="/appointments", tags=["Appointments"])
 async def list_available_slots(
     doctor_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
     day: Annotated[date, Query(description="Calendar day (YYYY-MM-DD) in Asia/Karachi")],
 ) -> list[AppointmentSlot]:
     if not can_view_doctor_schedule(current, doctor_id):
@@ -80,7 +83,10 @@ async def list_available_slots(
 @router.get("", response_model=list[AppointmentListItem], status_code=status.HTTP_200_OK)
 async def list_appointments(
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
     patient_id: UUID | None = Query(None),
     doctor_id: UUID | None = Query(None),
     status: AppointmentStatus | None = Query(None),
@@ -141,7 +147,10 @@ async def create_appointment(
     body: AppointmentCreate,
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(require_role(UserRole.admin, UserRole.receptionist, UserRole.doctor))],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.receptionist, UserRole.doctor, UserRole.nurse)),
+    ],
 ) -> Appointment:
     appt = await create_appointment_service(db, current, body)
     await audit_service.record(
@@ -161,7 +170,10 @@ async def create_appointment(
 async def get_appointment(
     appointment_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
 ) -> Appointment:
     appt = await get_appointment_or_404(db, appointment_id)
     if current.role == UserRole.doctor and appt.doctor_id != current.id:
@@ -176,7 +188,10 @@ async def update_appointment(
     body: AppointmentUpdate,
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
 ) -> Appointment:
     appt = await get_appointment_or_404(db, appointment_id)
     ensure_can_manage_appointment(current, appt)
@@ -200,7 +215,10 @@ async def cancel_appointment(
     appointment_id: UUID,
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[
+        User,
+        Depends(require_role(UserRole.admin, UserRole.doctor, UserRole.nurse, UserRole.receptionist)),
+    ],
 ) -> None:
     """Mark appointment as cancelled (soft cancel)."""
     appt = await get_appointment_or_404(db, appointment_id)

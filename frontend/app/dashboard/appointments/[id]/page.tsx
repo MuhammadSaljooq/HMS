@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
+import { RoleGuard } from "@/components/layout/RoleGuard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,6 +21,7 @@ import { useAppointments } from "@/hooks/useAppointments";
 import { appointmentStatusBadgeClass } from "@/lib/appointment-styles";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { calculateAge, formatDate } from "@/lib/patient-utils";
+import { APPOINTMENT_ROLES } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import type { AppointmentDetail, AppointmentStatus, User } from "@/types";
@@ -36,6 +38,14 @@ function canManage(user: User | null, row: AppointmentDetail): boolean {
 }
 
 export default function AppointmentDetailPage() {
+  return (
+    <RoleGuard roles={APPOINTMENT_ROLES}>
+      <AppointmentDetailContent />
+    </RoleGuard>
+  );
+}
+
+function AppointmentDetailContent() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params?.id ?? "";

@@ -1,18 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { RoleGuard } from "@/components/layout/RoleGuard";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { api } from "@/lib/api";
 import { LOGIN_ROLE_OPTIONS, USER_ROLE_LABELS } from "@/lib/roles";
 import { SETTINGS_ROLES } from "@/lib/rbac";
+import { useUpdateUserMutation, useUsersQuery } from "@/hooks/queries/useUsers";
+import { useAuthStore } from "@/store/authStore";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { User, UserRole } from "@/types";
 import styles from "../theme-dashboard.module.css";
+
+const PAGE_SIZE = 50;
 
 type CreateUserForm = {
   full_name: string;
@@ -34,6 +48,7 @@ export default function SettingsPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdUser, setCreatedUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const queryClient = useQueryClient();
 
   const selectedRole = LOGIN_ROLE_OPTIONS.find((option) => option.role === form.role) ?? LOGIN_ROLE_OPTIONS[0];
 
@@ -75,6 +90,7 @@ export default function SettingsPage() {
       setCreatedUser(data);
       setForm({ ...INITIAL_FORM, role: payload.role });
       setFieldErrors({});
+      await queryClient.invalidateQueries({ queryKey: ["users"] });
     } catch (error: unknown) {
       setSubmitError(getApiErrorMessage(error, "Could not create user."));
     } finally {
@@ -231,6 +247,8 @@ export default function SettingsPage() {
                   </div>
                 </form>
               </article>
+
+              <ManageAccountsSection />
             </div>
         </main>
 
@@ -271,5 +289,265 @@ export default function SettingsPage() {
         </aside>
       </>
     </RoleGuard>
+  );
+}
+
+const ALL_ROLES: UserRole[] = LOGIN_ROLE_OPTIONS.map((option) => option.role);
+
+function formatCreatedAt(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function ManageAccountsSection() {
+  const currentUserId = useAuthStore((state) => state.user?.id);
+
+  const [page, setPage] = useState(0);
+  const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
+  const [activeOnly, setActiveOnly] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [confirmUserId, setConfirmUserId] = useState<string | null>(null);
+
+  const skip = page * PAGE_SIZE;
+
+  const { items, total, loading, fetching, error } = useUsersQuery({
+    skip,
+    limit: PAGE_SIZE,
+    role: roleFilter === "all" ? undefined : roleFilter,
+    isActive: activeOnly ? true : undefined,
+  });
+
+  const updateMutation = useUpdateUserMutation();
+
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const rangeStart = total === 0 ? 0 : skip + 1;
+  const rangeEnd = Math.min(skip + items.length, total);
+
+  const roleSelectItems = useMemo(
+    () => LOGIN_ROLE_OPTIONS.map((option) => ({ role: option.role, label: option.label })),
+    [],
+  );
+
+  async function runUpdate(user: User, body: { role?: UserRole; is_active?: boolean }) {
+    setActionError(null);
+    setPendingUserId(user.id);
+    try {
+      await updateMutation.mutateAsync({ id: user.id, body });
+    } catch (mutationError: unknown) {
+      setActionError(getApiErrorMessage(mutationError, "Could not update the account."));
+    } finally {
+      setPendingUserId(null);
+    }
+  }
+
+  function handleRoleChange(user: User, nextRole: UserRole) {
+    if (nextRole === user.role) return;
+    void runUpdate(user, { role: nextRole });
+  }
+
+  function handleToggleActive(user: User) {
+    if (user.is_active) {
+      setConfirmUserId(user.id);
+      return;
+    }
+    void runUpdate(user, { is_active: true });
+  }
+
+  function confirmDeactivate(user: User) {
+    setConfirmUserId(null);
+    void runUpdate(user, { is_active: false });
+  }
+
+  function resetFilters(next: () => void) {
+    setActionError(null);
+    setPage(0);
+    next();
+  }
+
+  return (
+    <article className={styles.dataCard}>
+      <header className={styles.dataHeader}>
+        <div>
+          <h3 className={styles.dataTitle}>Manage accounts</h3>
+          <p className={styles.heroSubtitle} style={{ margin: 0 }}>
+            Change built-in roles or deactivate accounts. Backend guards still protect the last admin and your own account.
+          </p>
+        </div>
+        <span className={styles.dropdown}>{total} total</span>
+      </header>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="user-role-filter" className="text-xs uppercase tracking-wide text-muted-foreground">
+            Role
+          </Label>
+          <Select
+            value={roleFilter}
+            onValueChange={(value) => resetFilters(() => setRoleFilter(value as UserRole | "all"))}
+          >
+            <SelectTrigger id="user-role-filter" className="h-9 w-[150px] bg-white">
+              <SelectValue placeholder="All roles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All roles</SelectItem>
+              {roleSelectItems.map((option) => (
+                <SelectItem key={option.role} value={option.role}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-slate-300"
+            checked={activeOnly}
+            onChange={(event) => resetFilters(() => setActiveOnly(event.target.checked))}
+          />
+          Active only
+        </label>
+
+        {fetching ? <span className="text-xs text-muted-foreground">Refreshing…</span> : null}
+      </div>
+
+      {actionError ? (
+        <div className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {actionError}
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      ) : loading ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Loading accounts…</p>
+      ) : items.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">No accounts match the current filters.</p>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-slate-200">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((user) => {
+                const isSelf = !!currentUserId && user.id === currentUserId;
+                const isBusy = pendingUserId === user.id;
+                const selfTooltip = isSelf ? "You can't change your own account here." : undefined;
+
+                return (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium text-slate-900">{user.full_name}</TableCell>
+                    <TableCell className="text-slate-600">{user.email}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={user.role}
+                        onValueChange={(value) => handleRoleChange(user, value as UserRole)}
+                        disabled={isSelf || isBusy}
+                      >
+                        <SelectTrigger
+                          className="h-9 w-[150px] bg-white"
+                          title={selfTooltip}
+                          aria-label={`Change role for ${user.full_name}`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALL_ROLES.map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {USER_ROLE_LABELS[role]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.is_active ? "secondary" : "outline"}>
+                        {user.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-slate-600">{formatCreatedAt(user.created_at)}</TableCell>
+                    <TableCell className="text-right">
+                      {confirmUserId === user.id ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-xs text-slate-600">Deactivate?</span>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => confirmDeactivate(user)}
+                            className="rounded-full bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground transition hover:opacity-90 disabled:opacity-60"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmUserId(null)}
+                            className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isSelf || isBusy}
+                          title={selfTooltip}
+                          onClick={() => handleToggleActive(user)}
+                          className={
+                            user.is_active
+                              ? "rounded-full border border-destructive/40 bg-white px-4 py-1.5 text-xs font-semibold text-destructive transition hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
+                              : "rounded-full border border-emerald-300 bg-white px-4 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          }
+                        >
+                          {isBusy ? "Saving…" : user.is_active ? "Deactivate" : "Reactivate"}
+                        </button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {!loading && !error && items.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            Showing {rangeStart}–{rangeEnd} of {total} · Page {page + 1} of {pageCount}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={page === 0 || fetching}
+              onClick={() => setPage((prev) => Math.max(0, prev - 1))}
+              className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              disabled={skip + items.length >= total || fetching}
+              onClick={() => setPage((prev) => prev + 1)}
+              className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </article>
   );
 }

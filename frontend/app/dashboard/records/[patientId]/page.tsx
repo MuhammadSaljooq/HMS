@@ -4,16 +4,25 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { RoleGuard } from "@/components/layout/RoleGuard";
 import { MedicalRecordForm } from "@/components/records/MedicalRecordForm";
 import { useCreateRecord } from "@/hooks/queries/useCreateRecord";
 import { api } from "@/lib/api";
 import { calculateAge, formatDate } from "@/lib/patient-utils";
-import { RECORD_CREATE_ROLES, hasRequiredRole } from "@/lib/rbac";
+import { RECORD_CREATE_ROLES, RECORDS_VIEW_ROLES, hasRequiredRole } from "@/lib/rbac";
 import { useAuthStore } from "@/store/authStore";
 import type { MedicalRecord, Patient } from "@/types";
 import styles from "../../theme-dashboard.module.css";
 
 export default function PatientRecordsPage() {
+  return (
+    <RoleGuard roles={RECORDS_VIEW_ROLES}>
+      <PatientRecordsContent />
+    </RoleGuard>
+  );
+}
+
+function PatientRecordsContent() {
   const params = useParams<{ patientId: string }>();
   const patientId = params?.patientId ?? "";
 

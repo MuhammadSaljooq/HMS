@@ -15,8 +15,11 @@ import {
 
 import {
   ADMIN_OPERATIONS_ROLES,
+  APPOINTMENT_ROLES,
   BILLING_ROLES,
+  CLINICAL_VIEW_ROLES,
   DASHBOARD_HOME_ROLES,
+  RECORDS_VIEW_ROLES,
   SETTINGS_ROLES,
   TRANSCRIBER_ROLES,
   hasRequiredRole,
@@ -33,10 +36,10 @@ export type DashboardNavItem = {
 
 export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
   { href: "/dashboard", label: "Dashboard", shortLabel: "Home", icon: LayoutDashboard, roles: DASHBOARD_HOME_ROLES },
-  { href: "/dashboard/patients", label: "Patients", icon: Users },
-  { href: "/dashboard/appointments", label: "Appointments", shortLabel: "Appts", icon: CalendarDays },
+  { href: "/dashboard/patients", label: "Patients", icon: Users, roles: CLINICAL_VIEW_ROLES },
+  { href: "/dashboard/appointments", label: "Appointments", shortLabel: "Appts", icon: CalendarDays, roles: APPOINTMENT_ROLES },
   { href: "/dashboard/transcriber", label: "Transcriber", shortLabel: "Mic", icon: Mic, roles: TRANSCRIBER_ROLES },
-  { href: "/dashboard/records", label: "Records", icon: ClipboardList },
+  { href: "/dashboard/records", label: "Records", icon: ClipboardList, roles: RECORDS_VIEW_ROLES },
   { href: "/dashboard/billing", label: "Billing", shortLabel: "Cash", icon: Receipt, roles: BILLING_ROLES },
   { href: "/dashboard/doctors-staff", label: "Doctors and Staff", shortLabel: "Staff", icon: Stethoscope, roles: ADMIN_OPERATIONS_ROLES },
   { href: "/dashboard/room", label: "Room", shortLabel: "Room", icon: Warehouse, roles: ADMIN_OPERATIONS_ROLES },

@@ -11,7 +11,7 @@ from app.services import patient_service
 
 
 def can_manage_appointment(user: User, appt: Appointment) -> bool:
-    if user.role in (UserRole.admin, UserRole.receptionist):
+    if user.role in (UserRole.admin, UserRole.receptionist, UserRole.nurse):
         return True
     return user.role == UserRole.doctor and appt.doctor_id == user.id
 

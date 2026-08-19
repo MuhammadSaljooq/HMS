@@ -24,7 +24,7 @@ from app.services.authorization_service import (
     ensure_can_attach_transcription_to_record,
     ensure_can_view_record,
 )
-from app.utils.deps import get_current_user, get_db, require_role
+from app.utils.deps import get_db, require_role
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +190,7 @@ async def transcribe_async(
 async def transcribe_job_status(
     job_id: str,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[User, Depends(require_role(UserRole.admin, UserRole.doctor))],
     transcription_id: UUID | None = Query(
         default=None,
         description="ID returned with the job; include while the task is PENDING so status can load the row.",
@@ -234,7 +234,7 @@ async def transcribe_job_status(
 async def get_transcription_result(
     transcription_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current: Annotated[User, Depends(get_current_user)],
+    current: Annotated[User, Depends(require_role(UserRole.admin, UserRole.doctor))],
 ) -> TranscriptionPipelineResult:
     tr = await transcription_workflow_service.get_transcription_or_404(db, transcription_id)
     await _assert_can_read_transcription(db, current, tr)

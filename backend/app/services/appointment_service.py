@@ -41,7 +41,7 @@ def intervals_overlap(a0: datetime, a1: datetime, b0: datetime, b1: datetime) ->
 
 async def lock_doctor_day_schedule(db: AsyncSession, *, doctor_id: UUID, slot_start: datetime) -> None:
     local_slot = normalize_to_karachi(slot_start)
-    doctor_key = int.from_bytes(doctor_id.bytes[:4], byteorder="big", signed=False)
+    doctor_key = int.from_bytes(doctor_id.bytes[:4], byteorder="big", signed=True)
     day_key = local_slot.date().toordinal()
     await db.execute(
         text("SELECT pg_advisory_xact_lock(:doctor_key, :day_key)"),

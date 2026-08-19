@@ -11,8 +11,10 @@ import {
   type PatientSortKey,
   type SortDir,
 } from "@/components/patients/PatientTable";
+import { RoleGuard } from "@/components/layout/RoleGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePatientDirectoryQuery } from "@/hooks/queries/usePatientDirectoryQuery";
+import { CLINICAL_VIEW_ROLES } from "@/lib/rbac";
 import styles from "./theme-patients.module.css";
 
 const tableThemeClassNames = {
@@ -308,8 +310,10 @@ function PatientsPageContent() {
 
 export default function PatientsPage() {
   return (
-    <Suspense fallback={<PatientsListSkeleton />}>
-      <PatientsPageContent />
-    </Suspense>
+    <RoleGuard roles={CLINICAL_VIEW_ROLES}>
+      <Suspense fallback={<PatientsListSkeleton />}>
+        <PatientsPageContent />
+      </Suspense>
+    </RoleGuard>
   );
 }

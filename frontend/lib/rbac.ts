@@ -9,6 +9,11 @@ export const ADMIN_OPERATIONS_ROLES: UserRole[] = ["admin"];
 export const BILLING_ROLES: UserRole[] = ["admin", "cashier"];
 export const BILLING_ADMIN_ROLES: UserRole[] = ["admin"];
 
+// Clinical staff who may view patients, appointments, and records (cashier excluded).
+export const CLINICAL_VIEW_ROLES: UserRole[] = ["admin", "doctor", "nurse", "receptionist"];
+export const APPOINTMENT_ROLES: UserRole[] = ["admin", "doctor", "nurse", "receptionist"];
+export const RECORDS_VIEW_ROLES: UserRole[] = ["admin", "doctor", "nurse", "receptionist"];
+
 export const DEFAULT_ROLE_HOME_PATHS: Record<UserRole, string> = {
   admin: "/dashboard",
   doctor: "/dashboard/records",
@@ -32,6 +37,9 @@ const PREFIX_DASHBOARD_ROUTE_RULES: Array<{ prefix: string; roles: UserRole[] }>
   { prefix: "/dashboard/settings", roles: SETTINGS_ROLES },
   { prefix: "/dashboard/transcriber", roles: TRANSCRIBER_ROLES },
   { prefix: "/dashboard/billing", roles: BILLING_ROLES },
+  { prefix: "/dashboard/patients", roles: CLINICAL_VIEW_ROLES },
+  { prefix: "/dashboard/appointments", roles: APPOINTMENT_ROLES },
+  { prefix: "/dashboard/records", roles: RECORDS_VIEW_ROLES },
 ];
 
 export function hasRequiredRole(role: string, allowedRoles: readonly UserRole[]): boolean {

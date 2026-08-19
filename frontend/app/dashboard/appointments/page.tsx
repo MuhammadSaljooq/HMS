@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { AppointmentCalendar } from "@/components/appointments/AppointmentCalendar";
 import { AppointmentForm } from "@/components/appointments/AppointmentForm";
+import { RoleGuard } from "@/components/layout/RoleGuard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { APPOINTMENT_STATUSES, useAppointmentsDashboardData } from "@/hooks/useAppointmentsDashboardData";
 import { appointmentStatusBadgeClass } from "@/lib/appointment-styles";
+import { APPOINTMENT_ROLES } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import type { AppointmentListItem, AppointmentStatus, User } from "@/types";
@@ -44,6 +46,14 @@ function canManageRow(user: User | null, row: AppointmentListItem): boolean {
 }
 
 export default function AppointmentsPage() {
+  return (
+    <RoleGuard roles={APPOINTMENT_ROLES}>
+      <AppointmentsPageContent />
+    </RoleGuard>
+  );
+}
+
+function AppointmentsPageContent() {
   const user = useAuthStore((s) => s.user);
   const {
     rows,

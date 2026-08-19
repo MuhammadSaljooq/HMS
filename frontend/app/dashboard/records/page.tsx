@@ -3,15 +3,24 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { RoleGuard } from "@/components/layout/RoleGuard";
 import { Input } from "@/components/ui/input";
 import { usePatients } from "@/hooks/usePatients";
 import { calculateAge } from "@/lib/patient-utils";
-import { SETTINGS_ROLES, hasRequiredRole } from "@/lib/rbac";
+import { RECORDS_VIEW_ROLES, SETTINGS_ROLES, hasRequiredRole } from "@/lib/rbac";
 import { useAuthStore } from "@/store/authStore";
 import type { Patient } from "@/types";
 import styles from "../theme-dashboard.module.css";
 
 export default function RecordsHubPage() {
+  return (
+    <RoleGuard roles={RECORDS_VIEW_ROLES}>
+      <RecordsHubContent />
+    </RoleGuard>
+  );
+}
+
+function RecordsHubContent() {
   const { list } = usePatients();
   const role = useAuthStore((s) => s.user?.role);
   const canManageSettings = hasRequiredRole(role ?? "", SETTINGS_ROLES);
