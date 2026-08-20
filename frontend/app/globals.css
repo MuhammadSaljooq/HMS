@@ -4,74 +4,169 @@
 
 @layer base {
   :root {
+    /* shadcn HSL tokens — retuned to the ems-next LIGHT palette */
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 228 37% 13%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 228 37% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 173 77% 26%;
+    --popover-foreground: 228 37% 13%;
+    --primary: 247 79% 68%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 173 44% 95%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 173 30% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 173 55% 94%;
-    --accent-foreground: 173 77% 20%;
-    --destructive: 0 84% 60%;
+    --secondary: 228 30% 96%;
+    --secondary-foreground: 228 37% 13%;
+    --muted: 228 30% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 249 100% 96%;
+    --accent-foreground: 248 60% 57%;
+    --destructive: 353 84% 61%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 88%;
-    --input: 214 32% 88%;
-    --ring: 173 77% 26%;
+    --border: 223 22% 91%;
+    --input: 223 22% 91%;
+    --ring: 247 79% 68%;
     --radius: 0.5rem;
-    --chart-1: 173 77% 36%;
-    --chart-2: 199 89% 48%;
-    --chart-3: 215 16% 47%;
-    --chart-4: 214 32% 75%;
-    --chart-5: 173 55% 85%;
+    --chart-1: 247 79% 68%;
+    --chart-2: 172 78% 40%;
+    --chart-3: 223 84% 55%;
+    --chart-4: 142 70% 41%;
+    --chart-5: 28 91% 60%;
     --sidebar: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 173 77% 26%;
+    --sidebar-foreground: 228 37% 13%;
+    --sidebar-primary: 247 79% 68%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 173 44% 95%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 173 77% 26%;
+    --sidebar-accent: 249 100% 96%;
+    --sidebar-accent-foreground: 248 60% 57%;
+    --sidebar-border: 223 22% 91%;
+    --sidebar-ring: 247 79% 68%;
+
+    /* ems-next raw hex tokens (kit §5) — coexist with the shadcn HSL tokens */
+    --paper: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f3f4f8;
+    --surface-3: #ffffff;
+    --line: #e2e5ec;
+
+    --ink: #151a2d;
+    --ink-soft: #6b7280;
+    --muted: #98a0b3;
+
+    --nav-idle: #565d70;
+    --nav-icon: #7c8398;
+    --nav-section: #6b7189;
+
+    --accent: #7c6cf0;
+    --accent-ink: #5b4ed4;
+    --accent-soft: #efecff;
+
+    --positive: #1fb15b;
+    --negative: #ef4a5f;
+    --warning: #f6923a;
+
+    --accent-purple: #7c6cf0;
+    --accent-purple-soft: #efecff;
+    --accent-teal: #18b8a8;
+    --accent-teal-soft: #e6f9f6;
+    --accent-orange: #f6923a;
+    --accent-orange-soft: #fff1e3;
+    --accent-red: #ef4a5f;
+    --accent-red-soft: #fde8ea;
+    --accent-green: #1fb15b;
+    --accent-green-soft: #e7f9ee;
+    --accent-blue: #2f6fed;
+    --accent-blue-soft: #e8f0fe;
+    --accent-coral: #f2542d;
+    --accent-coral-soft: #ffe7df;
+    --accent-amber: #a16207;
+    --accent-amber-soft: #fef3c7;
+
+    --scrim: rgba(20, 24, 45, 0.4);
+
+    --radius-card: 18px;
+    --radius-control: 10px;
+    --radius-inset: 8px;
+
+    /* Alias so existing CSS Modules referencing var(--font-dm-sans) keep working */
+    --font-dm-sans: var(--font-sans);
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 173 55% 42%;
-    --primary-foreground: 222 47% 8%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 173 40% 18%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 173 55% 42%;
-    --chart-1: 173 55% 50%;
-    --chart-2: 199 89% 48%;
-    --chart-3: 215 20% 65%;
-    --chart-4: 217 33% 35%;
-    --chart-5: 173 40% 30%;
-    --sidebar: 222 47% 10%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 173 55% 42%;
-    --sidebar-primary-foreground: 222 47% 8%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 173 55% 42%;
+    color-scheme: dark;
+
+    /* shadcn HSL tokens — retuned to the ems-next DARK palette */
+    --background: 240 3% 4%;
+    --foreground: 0 0% 100%;
+    --card: 240 2% 11%;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 2% 11%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 250 85% 76%;
+    --primary-foreground: 240 3% 4%;
+    --secondary: 240 2% 17%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 2% 17%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 249 43% 23%;
+    --accent-foreground: 250 100% 87%;
+    --destructive: 352 100% 71%;
+    --destructive-foreground: 240 3% 4%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 250 85% 76%;
+    --chart-1: 250 85% 76%;
+    --chart-2: 172 62% 51%;
+    --chart-3: 210 100% 71%;
+    --chart-4: 142 60% 51%;
+    --chart-5: 32 100% 65%;
+    --sidebar: 240 2% 11%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 250 85% 76%;
+    --sidebar-primary-foreground: 240 3% 4%;
+    --sidebar-accent: 249 43% 23%;
+    --sidebar-accent-foreground: 250 100% 87%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 250 85% 76%;
+
+    /* ems-next raw hex tokens (kit §5) — dark */
+    --paper: #0b0b0c;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --surface-3: #3a3a3c;
+    --line: rgba(255, 255, 255, 0.11);
+
+    --ink: #ffffff;
+    --ink-soft: rgba(235, 235, 245, 0.6);
+    --muted: rgba(235, 235, 245, 0.58);
+
+    --nav-idle: rgba(235, 235, 245, 0.62);
+    --nav-icon: rgba(235, 235, 245, 0.45);
+    --nav-section: rgba(235, 235, 245, 0.55);
+
+    --accent: #9d8df7;
+    --accent-ink: #c6beff;
+    --accent-soft: #2a2350;
+
+    --positive: #34d27b;
+    --negative: #ff6b7d;
+    --warning: #ffa64d;
+
+    --accent-purple: #9d8df7;
+    --accent-purple-soft: #2a2350;
+    --accent-teal: #34d3c0;
+    --accent-teal-soft: #10322f;
+    --accent-orange: #ffa64d;
+    --accent-orange-soft: #3a2a14;
+    --accent-red: #ff6b7d;
+    --accent-red-soft: #3a2026;
+    --accent-green: #34d27b;
+    --accent-green-soft: #123322;
+    --accent-blue: #6ab0ff;
+    --accent-blue-soft: #16283d;
+    --accent-coral: #ff7d5a;
+    --accent-coral-soft: #3a1f16;
+    --accent-amber: #fbbf24;
+    --accent-amber-soft: #3a2f10;
+
+    --scrim: rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -81,12 +176,62 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Honor OS reduce-motion for all CSS animation/transition. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

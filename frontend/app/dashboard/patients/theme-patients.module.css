@@ -1,15 +1,15 @@
 .page {
-  --bg: #e8ecef;
-  --surface: #f2f4f6;
+  --bg: #ffffff;
+  --surface: #ffffff;
   --card: #ffffff;
-  --card-inner: #f7f8fa;
-  --border: rgba(0, 0, 0, 0.07);
-  --text-primary: #1a1d21;
-  --text-secondary: #7a8190;
-  --text-muted: #adb5bd;
-  --accent-teal: #6bbfcc;
-  --accent-teal-bg: #dff0f4;
-  --accent-red: #f05c3a;
+  --card-inner: #f3f4f8;
+  --border: #e2e5ec;
+  --text-primary: #151a2d;
+  --text-secondary: #6b7280;
+  --text-muted: #98a0b3;
+  --accent-teal: #7c6cf0;
+  --accent-teal-bg: #efecff;
+  --accent-red: #7c6cf0;
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-dm-sans), sans-serif;
@@ -63,7 +63,7 @@
 }
 
 .navLinkActive {
-  background: #1a1d21;
+  background: #151a2d;
   color: #fff;
   font-weight: 600;
 }
@@ -155,7 +155,7 @@
   height: 34px;
   justify-content: center;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
   width: 34px;
 }
 
@@ -233,7 +233,7 @@
 .dataCard {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 22px;
+  border-radius: 18px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   grid-column: 1 / 2;
   padding: 14px;
@@ -275,7 +275,7 @@
   align-self: flex-start;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 22px;
+  border-radius: 18px;
   box-sizing: border-box;
   display: flex;
   flex: 0 0 300px;
@@ -343,7 +343,7 @@
 }
 
 .remindBtn {
-  background: #1a1d21;
+  background: #151a2d;
   border: 0;
   border-radius: 999px;
   color: #fff;
@@ -429,9 +429,9 @@
 }
 
 .statBadge {
-  background: #dff0f4;
+  background: #efecff;
   border-radius: 999px;
-  color: #3a9cb8;
+  color: #5b4ed4;
   font-size: 10px;
   font-weight: 700;
   padding: 4px 8px;
@@ -489,12 +489,12 @@
 
 .tableSearchInput:focus {
   border-color: var(--accent-teal);
-  box-shadow: 0 0 0 3px rgba(107, 191, 204, 0.18);
+  box-shadow: 0 0 0 3px rgba(124, 108, 240, 0.18);
 }
 
 .tableCreateButton {
-  background: #1a1d21;
-  border: 1px solid #1a1d21;
+  background: #7c6cf0;
+  border: 1px solid #7c6cf0;
   border-radius: 999px;
   color: #fff;
   font-size: 12px;
@@ -503,8 +503,8 @@
 }
 
 .tableCreateButton:hover {
-  background: #2a3040;
-  border-color: #2a3040;
+  background: #6b5ae8;
+  border-color: #6b5ae8;
 }
 
 .tableShell {
@@ -521,7 +521,7 @@
 }
 
 .tableShell :global(thead tr) {
-  border-bottom-color: rgba(26, 29, 33, 0.14);
+  border-bottom-color: #e2e5ec;
 }
 
 .tableShell :global(th) {
@@ -546,7 +546,7 @@
 
 .tableBodyRow {
   background: var(--card);
-  transition: background 0.2s ease;
+  transition: background 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .tableBodyRow:hover {
@@ -590,7 +590,7 @@
 }
 
 .tableLoadingPulse {
-  background: #e5e7eb;
+  background: #f3f4f8;
 }
 
 @media (max-width: 1280px) {
