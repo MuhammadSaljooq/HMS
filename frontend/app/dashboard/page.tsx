@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays, Mic, Stethoscope, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 
@@ -52,11 +53,17 @@ export default function DashboardPage() {
               </header>
               <div className={styles.statInnerCard}>
                 <div className={styles.statInnerLabel}>Total Patients</div>
-                <div className={styles.statValue}>👤 {cardValue(stats?.total_patients)}</div>
+                <div className={styles.statValue}>
+                  <Users className={styles.statIcon} size={26} strokeWidth={1.75} aria-hidden="true" />
+                  {cardValue(stats?.total_patients)}
+                </div>
               </div>
               <div className={styles.statInnerCard}>
                 <div className={styles.statInnerLabel}>Registered Today</div>
-                <div className={styles.statValue}>🆕 {cardValue(stats?.patients_registered_today)}</div>
+                <div className={styles.statValue}>
+                  <UserPlus className={styles.statIcon} size={26} strokeWidth={1.75} aria-hidden="true" />
+                  {cardValue(stats?.patients_registered_today)}
+                </div>
               </div>
             </article>
 
@@ -66,11 +73,17 @@ export default function DashboardPage() {
               </header>
               <div className={styles.statInnerCard}>
                 <div className={styles.statInnerLabel}>Scheduled Today</div>
-                <div className={styles.statValue}>📅 {cardValue(stats?.appointments_today)}</div>
+                <div className={styles.statValue}>
+                  <CalendarDays className={styles.statIcon} size={26} strokeWidth={1.75} aria-hidden="true" />
+                  {cardValue(stats?.appointments_today)}
+                </div>
               </div>
               <div className={styles.statInnerCard}>
                 <div className={styles.statInnerLabel}>Pending Transcriptions</div>
-                <div className={styles.statValue}>📝 {cardValue(stats?.pending_transcriptions)}</div>
+                <div className={styles.statValue}>
+                  <Mic className={styles.statIcon} size={26} strokeWidth={1.75} aria-hidden="true" />
+                  {cardValue(stats?.pending_transcriptions)}
+                </div>
               </div>
             </article>
 
@@ -80,7 +93,10 @@ export default function DashboardPage() {
               </header>
               <div className={styles.statInnerCard}>
                 <div className={styles.statInnerLabel}>Active Doctors</div>
-                <div className={styles.statValue}>🩺 {cardValue(stats?.active_doctors)}</div>
+                <div className={styles.statValue}>
+                  <Stethoscope className={styles.statIcon} size={26} strokeWidth={1.75} aria-hidden="true" />
+                  {cardValue(stats?.active_doctors)}
+                </div>
               </div>
             </article>
           </div>
