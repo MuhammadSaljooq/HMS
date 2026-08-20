@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 
 import { useDashboardOverviewData } from "@/hooks/queries/useDashboardOverviewData";
+import { DashboardHeader } from "./DashboardHeader";
 import styles from "./theme-dashboard.module.css";
 
 export default function DashboardPage() {
@@ -43,7 +44,8 @@ export default function DashboardPage() {
   return (
     <>
       <main className={styles.main}>
-          <h1 className={styles.sectionTitle}>Statistical Summary</h1>
+          <DashboardHeader />
+          <h2 className={styles.sectionTitle}>Statistical Summary</h2>
           {error ? <p className={styles.errorText}>{error}</p> : null}
 
           <div className={styles.statRow}>
