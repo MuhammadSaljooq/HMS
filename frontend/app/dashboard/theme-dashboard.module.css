@@ -274,6 +274,140 @@
     0 0 0 4px rgba(107, 191, 204, 0.55);
 }
 
+/* ---------- Search header ---------- */
+
+.sbSearch {
+  padding: 2px 6px 8px;
+}
+
+.sbSearchBox {
+  align-items: center;
+  background: rgba(26, 29, 33, 0.035);
+  border: 1px solid rgba(26, 29, 33, 0.06);
+  border-radius: 10px;
+  display: flex;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px;
+  transition:
+    border-color var(--dur-hover) var(--ease-standard),
+    background var(--dur-hover) var(--ease-standard);
+}
+
+.sbSearchBox:focus-within {
+  background: var(--surface);
+  border-color: rgba(107, 191, 204, 0.55);
+  box-shadow: 0 0 0 3px rgba(107, 191, 204, 0.14);
+}
+
+.sbSearchIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.sbSearchInput {
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 0;
+  outline: none;
+  padding: 0;
+}
+
+.sbSearchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.sbSearchKbd {
+  background: var(--surface);
+  border: 1px solid rgba(26, 29, 33, 0.08);
+  border-radius: 6px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 5px;
+}
+
+.sbSearchIconBtn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 38px;
+  justify-content: center;
+  margin: 0 auto;
+  width: 38px;
+  transition: background var(--dur-hover) var(--ease-standard);
+}
+
+.sbSearchIconBtn:hover {
+  background: rgba(26, 29, 33, 0.04);
+  color: var(--text-primary);
+}
+
+/* ---------- Grouped nav ---------- */
+
+.sbGroup {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+}
+
+.sbGroup + .sbGroup {
+  margin-top: 10px;
+}
+
+.sbGroupLabel {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 8px 12px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.page[data-collapsed="true"] .sbGroupLabel {
+  height: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+.page[data-collapsed="true"] .sbGroup + .sbGroup {
+  margin-top: 4px;
+}
+
+.sbGroupList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sbNoResults {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  list-style: none;
+  padding: 10px 12px;
+}
+
+/* ---------- Footer ---------- */
+
 .sbFooter {
   border-top: 1px solid rgba(26, 29, 33, 0.06);
   display: flex;
@@ -281,40 +415,43 @@
   flex-shrink: 0;
   gap: 4px;
   margin-top: 8px;
-  padding-top: 8px;
+  padding-top: 10px;
 }
 
 .sbUserChip {
   align-items: center;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   gap: 12px;
   overflow: hidden;
-  padding: 6px 12px;
+  padding: 4px;
 }
 
 .page[data-collapsed="true"] .sbUserChip {
   justify-content: center;
-  padding: 6px 0;
+  padding: 4px 0;
 }
 
-.sbAvatar {
+.sbUserAvatar {
   align-items: center;
-  background: var(--accent-teal-bg);
-  border-radius: 50%;
-  color: #3a9cb8;
+  background: linear-gradient(135deg, var(--accent-teal) 0%, #5b5fd6 100%);
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(91, 95, 214, 0.22);
+  color: #fff;
   display: inline-flex;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
-  height: 32px;
+  height: 40px;
   justify-content: center;
-  width: 32px;
+  letter-spacing: 0.02em;
+  width: 40px;
 }
 
 .sbUserText {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   transition:
@@ -325,6 +462,7 @@
 .page[data-collapsed="true"] .sbUserText {
   opacity: 0;
   width: 0;
+  flex: 0 0 0;
 }
 
 .sbUserName {
@@ -336,49 +474,92 @@
   white-space: nowrap;
 }
 
-.sbUserRole {
+.sbUserEmail {
   color: var(--text-muted);
   font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.sbLogout {
+.sbUserActions {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+  transition: opacity var(--dur-collapse) var(--ease-collapse);
+}
+
+.page[data-collapsed="true"] .sbUserActions {
+  display: none;
+}
+
+.sbIconBtn {
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--text-secondary);
   cursor: pointer;
-  display: flex;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  gap: 12px;
-  height: 40px;
-  overflow: hidden;
-  padding: 0 12px;
-  white-space: nowrap;
-  width: 100%;
-  transition: background var(--dur-hover) var(--ease-standard);
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+  transition:
+    background var(--dur-hover) var(--ease-standard),
+    color var(--dur-hover) var(--ease-standard);
 }
 
-.sbLogout:hover:not(:disabled) {
-  background: rgba(240, 92, 58, 0.08);
-  color: var(--accent-red);
+.sbIconBtn:hover:not(:disabled) {
+  background: rgba(26, 29, 33, 0.05);
+  color: var(--text-primary);
 }
 
-.sbLogout:hover:not(:disabled) .sbIcon {
-  color: var(--accent-red);
-}
-
-.sbLogout:disabled {
+.sbIconBtn:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.page[data-collapsed="true"] .sbLogout {
-  gap: 0;
+/* Collapsed rail: standalone logout under the centered avatar. */
+.sbLogoutRail {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: none;
+  height: 32px;
   justify-content: center;
-  padding: 0;
+  margin: 0 auto;
+  width: 32px;
+  transition:
+    background var(--dur-hover) var(--ease-standard),
+    color var(--dur-hover) var(--ease-standard);
+}
+
+.sbLogoutRail:hover:not(:disabled) {
+  background: rgba(240, 92, 58, 0.08);
+  color: var(--accent-red);
+}
+
+.sbLogoutRail:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.page[data-collapsed="true"] .sbLogoutRail {
+  display: inline-flex;
+}
+
+.sbIconBtn:focus-visible,
+.sbLogoutRail:focus-visible,
+.sbSearchIconBtn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--card),
+    0 0 0 4px rgba(107, 191, 204, 0.55);
 }
 
 /* ---------- Mobile top bar + scrim ---------- */
@@ -988,8 +1169,7 @@
     flex: 1;
   }
 
-  .page[data-collapsed="true"] .sbItem,
-  .page[data-collapsed="true"] .sbLogout {
+  .page[data-collapsed="true"] .sbItem {
     gap: 12px;
     justify-content: flex-start;
     padding: 0 12px;
@@ -997,11 +1177,30 @@
 
   .page[data-collapsed="true"] .sbUserChip {
     justify-content: flex-start;
-    padding: 6px 12px;
+    padding: 4px;
   }
 
-  .sbItem,
-  .sbLogout {
+  /* Drawer is always expanded: show group labels, search box, user actions;
+     hide the collapsed-only logout rail even under the collapsed pref. */
+  .page[data-collapsed="true"] .sbUserActions {
+    display: flex;
+  }
+
+  .page[data-collapsed="true"] .sbLogoutRail {
+    display: none;
+  }
+
+  .page[data-collapsed="true"] .sbGroupLabel {
+    height: auto;
+    margin: 8px 12px 4px;
+    opacity: 1;
+  }
+
+  .page[data-collapsed="true"] .sbGroup + .sbGroup {
+    margin-top: 10px;
+  }
+
+  .sbItem {
     height: 44px;
   }
 
@@ -1036,12 +1235,16 @@
   .sbWordmark,
   .sbLabel,
   .sbUserText,
+  .sbUserActions,
   .sbIndicator,
   .sbItem,
-  .sbLogout,
   .sbToggle,
   .sbLogoMark,
   .sbLogoExpand,
+  .sbSearchBox,
+  .sbSearchIconBtn,
+  .sbIconBtn,
+  .sbLogoutRail,
   .layout,
   .sbScrim {
     transition: none !important;
