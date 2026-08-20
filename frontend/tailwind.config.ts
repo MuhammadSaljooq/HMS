@@ -10,7 +10,8 @@ const config: Config = {
   theme: {
   	extend: {
   		fontFamily: {
-  			sans: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
+  			sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+  			display: ["var(--font-display)", "system-ui", "sans-serif"],
   			mono: ["var(--font-dm-mono)", "ui-monospace", "monospace"],
   		},
   		colors: {
@@ -63,9 +64,27 @@ const config: Config = {
   			}
   		},
   		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
+  			card: '18px',
+  			control: '10px',
+  			inset: '8px',
+  			sm: 'calc(var(--radius) - 4px)',
+  			md: '8px',
+  			lg: '10px',
+  			xl: '18px',
+  			'2xl': '18px'
+  		},
+  		boxShadow: {
+  			card: '0 1px 2px rgba(20,24,45,0.04), 0 8px 24px -12px rgba(20,24,45,0.10)',
+  			lift: '0 4px 6px -1px rgba(20,24,45,0.06), 0 16px 32px -8px rgba(20,24,45,0.12)'
+  		},
+  		keyframes: {
+  			'fade-up': {
+  				'0%': { opacity: '0', transform: 'translateY(10px)' },
+  				'100%': { opacity: '1', transform: 'translateY(0)' }
+  			}
+  		},
+  		animation: {
+  			'fade-up': 'fade-up 0.55s cubic-bezier(0.22,1,0.36,1) both'
   		}
   	}
   },

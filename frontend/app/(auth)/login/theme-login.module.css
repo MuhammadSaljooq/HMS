@@ -2,14 +2,14 @@
   --bg: #ffffff;
   --surface: #ffffff;
   --card: #ffffff;
-  --card-inner: #ffffff;
-  --border: rgba(0, 0, 0, 0.08);
-  --text-primary: #1a1d21;
-  --text-secondary: #7a8190;
-  --text-muted: #adb5bd;
-  --accent-teal: #6bbfcc;
-  --accent-teal-bg: #dff0f4;
-  --accent-teal-dark: #4aa8b8;
+  --card-inner: #f3f4f8;
+  --border: #e2e5ec;
+  --text-primary: #151a2d;
+  --text-secondary: #6b7280;
+  --text-muted: #98a0b3;
+  --accent-teal: #7c6cf0;
+  --accent-teal-bg: #efecff;
+  --accent-teal-dark: #5b4ed4;
   min-height: 100vh;
   background: var(--bg);
   font-family: var(--font-dm-sans), sans-serif;
@@ -31,7 +31,7 @@
 }
 
 .bgBlobOne {
-  background: radial-gradient(circle, #a8dce8 0%, transparent 70%);
+  background: radial-gradient(circle, #c9c2f7 0%, transparent 70%);
   height: 480px;
   left: -100px;
   top: -120px;
@@ -58,7 +58,7 @@
 .wrapper {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: 18px;
   box-shadow: 0 1px 2px rgba(26, 29, 33, 0.04), 0 18px 50px rgba(26, 29, 33, 0.1);
   display: flex;
   min-height: auto;
@@ -69,7 +69,7 @@
 }
 
 .leftPanel {
-  background: linear-gradient(145deg, #1a1d21 0%, #2a3040 100%);
+  background: linear-gradient(145deg, #151a2d 0%, #2a3040 100%);
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -93,7 +93,7 @@
 }
 
 .decoCircleTwo {
-  border-color: rgba(107, 191, 204, 0.15);
+  border-color: rgba(124, 108, 240, 0.15);
   height: 200px;
   right: -20px;
   top: -20px;
@@ -108,7 +108,7 @@
 }
 
 .decoDot {
-  background: rgba(107, 191, 204, 0.25);
+  background: rgba(124, 108, 240, 0.25);
   border-radius: 50%;
   position: absolute;
 }
@@ -129,7 +129,7 @@
 }
 
 .decoDotThree {
-  background: rgba(107, 191, 204, 0.2);
+  background: rgba(124, 108, 240, 0.2);
   bottom: 25%;
   height: 10px;
   left: 30px;
@@ -297,8 +297,8 @@
 }
 
 .roleHint {
-  background: rgba(107, 191, 204, 0.09);
-  border: 1px solid rgba(107, 191, 204, 0.18);
+  background: rgba(124, 108, 240, 0.09);
+  border: 1px solid rgba(124, 108, 240, 0.18);
   border-radius: 14px;
   margin-bottom: 26px;
   padding: 14px 16px;
@@ -357,7 +357,7 @@
   font-weight: 500;
   outline: none;
   padding: 16px 84px 16px 42px;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
   width: 100%;
 }
 
@@ -368,7 +368,7 @@
 .formInput:focus {
   background: #fff;
   border-color: var(--accent-teal);
-  box-shadow: 0 0 0 4px rgba(107, 191, 204, 0.12);
+  box-shadow: 0 0 0 4px rgba(124, 108, 240, 0.12);
 }
 
 .eyeBtn {
@@ -448,7 +448,7 @@
 }
 
 .loginBtn {
-  background: var(--text-primary);
+  background: #7c6cf0;
   border: 0;
   border-radius: 14px;
   color: #ffffff;
@@ -457,12 +457,12 @@
   font-weight: 700;
   letter-spacing: 0.2px;
   padding: 16px;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
   width: 100%;
 }
 
 .loginBtn:hover:not(:disabled) {
-  background: #2a3040;
+  background: #6b5ae8;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
   transform: translateY(-1px);
 }
@@ -550,14 +550,14 @@
 
 .loadingWrap {
   align-items: center;
-  background: #e8ecef;
+  background: #ffffff;
   display: flex;
   justify-content: center;
   min-height: 100vh;
 }
 
 .loadingText {
-  color: #7a8190;
+  color: #6b7280;
   font-size: 14px;
   font-weight: 600;
 }
