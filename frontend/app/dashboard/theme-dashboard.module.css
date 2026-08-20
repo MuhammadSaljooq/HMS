@@ -622,10 +622,18 @@
 }
 
 .statValue {
+  align-items: center;
+  display: flex;
   font-size: 36px;
   font-weight: 700;
+  gap: 10px;
   line-height: 1.25;
   margin-top: 4px;
+}
+
+.statIcon {
+  color: var(--accent-teal);
+  flex-shrink: 0;
 }
 
 .bottomRow {
