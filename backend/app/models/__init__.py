@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.models.appointment import Appointment
 from app.models.audit import AuditLog
 from app.models.billing import Invoice, InvoiceLineItem, Payment, ServiceCatalog
+from app.models.clinic import Clinic, ClinicMembership, Region
 from app.models.enums import AppointmentStatus, TranscriptionStatus, UserRole
 from app.models.medical_record import MedicalRecord
 from app.models.patient import Patient
@@ -15,9 +16,12 @@ __all__ = [
     "Appointment",
     "AppointmentStatus",
     "AuditLog",
+    "Clinic",
+    "ClinicMembership",
     "Invoice",
     "InvoiceLineItem",
     "MedicalRecord",
+    "Region",
     "Patient",
     "Payment",
     "Prescription",

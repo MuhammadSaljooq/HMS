@@ -30,6 +30,9 @@ class Appointment(Base, SoftDeleteMixin):
     doctor_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
+    clinic_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("clinics.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[AppointmentStatus] = mapped_column(
         Enum(AppointmentStatus, name="appointment_status"),
