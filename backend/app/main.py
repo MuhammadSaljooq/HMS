@@ -15,8 +15,9 @@ from sqlalchemy import text
 
 from app.config import get_settings
 from app.database import engine
+from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.rate_limit import limiter
-from app.routers import appointments, auth, billing, clinics, dashboard, patients, records, transcribe, transcriptions, users
+from app.routers import appointments, auth, billing, clinics, dashboard, mfa, patients, records, transcribe, transcriptions, users
 
 settings = get_settings()
 logger = logging.getLogger("hms.api")
@@ -36,6 +37,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 @app.middleware("http")
@@ -61,6 +63,7 @@ async def request_observability_middleware(request: Request, call_next):
 
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(mfa.router, prefix="/api")
 app.include_router(patients.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(appointments.router, prefix="/api")
