@@ -46,3 +46,33 @@ class PaymentMethod(str, enum.Enum):
 class PaymentType(str, enum.Enum):
     payment = "payment"
     refund = "refund"
+
+
+class Eye(str, enum.Enum):
+    od = "od"
+    os = "os"
+    ou = "ou"
+
+
+class AcuityDistance(str, enum.Enum):
+    distance = "distance"
+    near = "near"
+
+
+class RefractionType(str, enum.Enum):
+    manifest = "manifest"
+    cycloplegic = "cycloplegic"
+    autorefraction = "autorefraction"
+
+
+class IOPMethod(str, enum.Enum):
+    applanation = "applanation"
+    noncontact = "noncontact"
+    tonopen = "tonopen"
+    other = "other"
+
+
+class Laterality(str, enum.Enum):
+    right = "right"
+    left = "left"
+    bilateral = "bilateral"

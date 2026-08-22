@@ -91,6 +91,21 @@ def requires_patient_filter_for_records(user: User) -> bool:
     return user.role in (UserRole.nurse, UserRole.receptionist)
 
 
+def can_edit_clinical(user: User) -> bool:
+    """Create/edit/delete of eye-care clinical data + optical Rx: admin or doctor."""
+    return user.role in (UserRole.admin, UserRole.doctor)
+
+
+def can_view_clinical(user: User) -> bool:
+    """View eye-care clinical data + optical Rx: everyone except cashier."""
+    return user.role in (
+        UserRole.admin,
+        UserRole.doctor,
+        UserRole.nurse,
+        UserRole.receptionist,
+    )
+
+
 def can_manage_billing(user: User) -> bool:
     return user.role in (UserRole.admin, UserRole.cashier)
 
