@@ -13,11 +13,23 @@ from app.config import get_settings
 from app.models import User
 from app.models.enums import UserRole
 from app.rate_limit import limiter
-from app.schemas.user import AuthUserResponse, ChangePasswordRequest, LoginRequest, UserCreate, UserRead
+from app.schemas.user import (
+    AuthUserResponse,
+    ChangePasswordRequest,
+    LoginRequest,
+    MfaChallengeResponse,
+    UserCreate,
+    UserRead,
+)
 from app.services import audit_service, auth_service
 from app.services.token_denylist import is_refresh_token_revoked, revoke_refresh_token
 from app.utils.deps import get_current_user, get_db, require_role
-from app.utils.security import decode_refresh_token, hash_password, verify_password
+from app.utils.security import (
+    create_mfa_challenge_token,
+    decode_refresh_token,
+    hash_password,
+    verify_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 settings = get_settings()
@@ -56,7 +68,7 @@ def clear_auth_cookies(response: Response) -> None:
     response_model=AuthUserResponse,
     status_code=status.HTTP_200_OK,
 )
-@limiter.limit("5/minute")
+@limiter.limit(settings.RATE_LIMIT_LOGIN)
 async def login(
     request: Request,
     body: LoginRequest,
@@ -67,6 +79,14 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
+        )
+    # MFA-enabled accounts must complete a TOTP challenge before a session is issued.
+    # MFA is disabled for all existing users, so this branch is never taken for them
+    # and their login behaviour is byte-for-byte unchanged.
+    if user.mfa_enabled:
+        challenge = create_mfa_challenge_token(str(user.id))
+        return JSONResponse(
+            content=MfaChallengeResponse(mfa_token=challenge).model_dump(mode="json")
         )
     access, refresh = auth_service.issue_tokens(user)
     await db.commit()
@@ -95,7 +115,7 @@ async def logout(request: Request) -> Response:
     response_model=AuthUserResponse,
     status_code=status.HTTP_200_OK,
 )
-@limiter.limit("20/minute")
+@limiter.limit(settings.RATE_LIMIT_REFRESH)
 async def refresh_session(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],

@@ -85,3 +85,24 @@ class AuthUserResponse(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=1, max_length=128)
+
+
+class MfaChallengeResponse(BaseModel):
+    """Returned by /auth/login when the account has MFA enabled."""
+
+    mfa_required: bool = True
+    mfa_token: str
+
+
+class MfaEnrollResponse(BaseModel):
+    secret: str
+    otpauth_uri: str
+
+
+class MfaCodeRequest(BaseModel):
+    code: str = Field(min_length=6, max_length=10)
+
+
+class MfaVerifyRequest(BaseModel):
+    mfa_token: str
+    code: str = Field(min_length=6, max_length=10)

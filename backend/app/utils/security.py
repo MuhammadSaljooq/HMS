@@ -59,3 +59,20 @@ def decode_refresh_token(token: str) -> dict[str, Any]:
     payload = decode_token(token)
     verify_token_type(payload, "refresh")
     return payload
+
+
+def create_mfa_challenge_token(subject: str) -> str:
+    """Short-lived, signed token proving password auth succeeded, pending a TOTP code.
+
+    It is NOT a session token (type != access/refresh) so it cannot be used against
+    protected endpoints; only /auth/mfa/verify accepts it.
+    """
+    expire = _now_utc() + timedelta(minutes=settings.MFA_CHALLENGE_TOKEN_EXPIRE_MINUTES)
+    to_encode: dict[str, Any] = {"sub": subject, "exp": expire, "type": "mfa_challenge"}
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+def decode_mfa_challenge_token(token: str) -> dict[str, Any]:
+    payload = decode_token(token)
+    verify_token_type(payload, "mfa_challenge")
+    return payload

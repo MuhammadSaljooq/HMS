@@ -71,6 +71,28 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/1"
     RATE_LIMIT_STORAGE_URL: str | None = None
 
+    # Brute-force protection. Disabled outside production by default so the test
+    # suite / local dev can hammer auth endpoints without tripping limits.
+    RATE_LIMIT_ENABLED: bool = False
+    RATE_LIMIT_LOGIN: str = "5/minute"
+    RATE_LIMIT_MFA: str = "10/minute"
+    RATE_LIMIT_REFRESH: str = "20/minute"
+
+    # Content-Security-Policy applied to app routes (not /docs, /redoc, /openapi.json).
+    # Locked down by default; API is JSON-only so it needs no inline scripts/styles.
+    SECURITY_CSP: str = (
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    )
+
+    # PHI encryption-at-rest. Comma-separated urlsafe base64 Fernet keys; the first
+    # key encrypts, all keys can decrypt (MultiFernet key rotation). The dev default
+    # is a fixed, well-known key so local dev + tests work with zero setup; it is
+    # REQUIRED and must be non-default in staging/production (see validator below).
+    PHI_ENCRYPTION_KEYS: str = "aG1zLWRldi1waGkta2V5LTAwMDAwMDAwMDAwMDAwMDA="
+
+    # Short-lived MFA challenge token (minutes) issued between password check and code verify.
+    MFA_CHALLENGE_TOKEN_EXPIRE_MINUTES: int = 5
+
     # Audio longer than this (seconds) uses POST /transcribe/async when duration not known (see router heuristics)
     TRANSCRIBE_ASYNC_THRESHOLD_SECONDS: int = 30
     BOOTSTRAP_ADMIN_TOKEN: str | None = None
@@ -85,6 +107,9 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
+    def phi_encryption_key_list(self) -> list[str]:
+        return [k.strip() for k in self.PHI_ENCRYPTION_KEYS.split(",") if k.strip()]
+
     @model_validator(mode="after")
     def validate_security_defaults(self) -> "Settings":
         is_prod_like = self.APP_ENV in {"staging", "production"}
@@ -98,6 +123,14 @@ class Settings(BaseSettings):
             raise ValueError("DEBUG must be false in staging/production.")
         if is_prod_like and self.SQL_ECHO is True:
             raise ValueError("SQL_ECHO must be false in staging/production.")
+        if is_prod_like and (
+            not self.PHI_ENCRYPTION_KEYS
+            or self.PHI_ENCRYPTION_KEYS.strip()
+            == "aG1zLWRldi1waGkta2V5LTAwMDAwMDAwMDAwMDAwMDA="
+        ):
+            raise ValueError(
+                "PHI_ENCRYPTION_KEYS must be configured to a non-default value in staging/production."
+            )
         return self
 
 

@@ -4,12 +4,13 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, String, func
+from sqlalchemy import Boolean, DateTime, Enum, String, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.enums import UserRole
+from app.utils.encryption import EncryptedString
 
 if TYPE_CHECKING:
     from app.models.appointment import Appointment
@@ -30,6 +31,16 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # --- MFA (TOTP), opt-in. Additive & nullable; existing users have MFA disabled. ---
+    # Stored encrypted at rest via EncryptedString (PHI-grade key handling).
+    mfa_secret: Mapped[str | None] = mapped_column(EncryptedString(255), nullable=True)
+    mfa_enabled: Mapped[bool] = mapped_column(
+        Boolean, server_default=text("false"), default=False, nullable=False
+    )
+    mfa_enrolled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
     appointments_as_doctor: Mapped[list["Appointment"]] = relationship(
