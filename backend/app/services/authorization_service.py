@@ -105,3 +105,8 @@ def can_manage_service_catalog(user: User) -> bool:
 
 def can_view_all_reconciliation(user: User) -> bool:
     return user.role == UserRole.admin
+
+
+def can_manage_clinics(user: User) -> bool:
+    """Only admins may create/update clinics/regions or manage memberships."""
+    return user.role == UserRole.admin

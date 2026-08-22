@@ -27,6 +27,9 @@ class Transcription(Base, SoftDeleteMixin):
         ForeignKey("medical_records.id", ondelete="SET NULL"),
         nullable=True,
     )
+    clinic_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("clinics.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     audio_file_url: Mapped[str] = mapped_column(String(1024), nullable=False)
     raw_transcript: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     cleaned_transcript: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
